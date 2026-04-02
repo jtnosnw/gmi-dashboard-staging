@@ -861,7 +861,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
 //  ENVIRONMENT — staging bypass (hostname-keyed, safe to merge)
 // ═══════════════════════════════════════════════════
 const IS_STAGING = window.location.hostname === 'jtnosnw.github.io'
-                && window.location.search.includes('staging=true');
+                && window.location.name.includes('staging');
 console.log('[GMI Staging]', IS_STAGING, '| host:', window.location.hostname, '| search:', window.location.search);
 
 // ═══════════════════════════════════════════════════
