@@ -1,0 +1,2775 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Global Market Intelligence Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+
+<!-- Firebase SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+<style>
+:root{
+  --bg-base:#080c10;--bg-card:#0d1117;--bg-card2:#111820;--bg-tab:#161e28;
+  --border:#1e2d3d;--border-bright:#2a3f55;
+  --accent-ca:#ff6b35;--accent-us:#4fc3f7;--accent-au:#69d99a;--accent-fx:#c084fc;
+  --text-primary:#e8f0fe;--text-secondary:#8899aa;--text-dim:#445566;
+  --gain:#4ade80;--loss:#f87171;--gold:#fbbf24;
+  --glow-ca:rgba(255,107,53,.15);--glow-us:rgba(79,195,247,.15);--glow-au:rgba(105,217,154,.15);
+  --radius:12px;
+  --theme:dark;
+}
+body.light-mode{
+  --bg-base:#f0f4f8;--bg-card:#ffffff;--bg-card2:#e8edf3;--bg-tab:#dce3ec;
+  --border:#c8d3de;--border-bright:#a0b0c0;
+  --text-primary:#0d1f2e;--text-secondary:#4a6070;--text-dim:#8899aa;
+  --glow-ca:rgba(255,107,53,.08);--glow-us:rgba(79,195,247,.08);--glow-au:rgba(105,217,154,.08);
+  --theme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg-base);color:var(--text-primary);font-family:'Syne',sans-serif;min-height:100vh;overflow-x:hidden;font-size:13px;transition:background .3s,color .3s}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(79,195,247,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,.03) 1px,transparent 1px);
+  background-size:40px 40px}
+body.light-mode::before{
+  background-image:linear-gradient(rgba(79,195,247,.06) 1px,transparent 1px),linear-gradient(90deg,rgba(79,195,247,.06) 1px,transparent 1px);
+}
+.wrapper{position:relative;z-index:1;width:100%;max-width:100%;margin:0;padding:0 32px 16px}
+
+/* STICKY HEADER */
+.header-sticky-wrap{position:sticky;top:0;z-index:100;padding:16px 0 0;background:var(--bg-base);transition:background .3s}
+.header-sticky-wrap::after{content:'';display:block;height:16px;background:var(--bg-base);transition:background .3s}
+
+/* HEADER */
+.header{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px;background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);gap:12px;flex-wrap:wrap;transition:background .3s,border-color .3s}
+.header-left{display:flex;align-items:center;gap:14px}
+.logo-mark{width:38px;height:38px;background:linear-gradient(135deg,#4fc3f7,#69d99a);border-radius:9px;
+  display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:#080c10;flex-shrink:0}
+.header h1{font-size:clamp(13px,2vw,17px);font-weight:800;letter-spacing:.05em}
+.header-subtitle{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-secondary);letter-spacing:.1em;margin-top:2px}
+.header-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.header-refreshed{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:.05em}
+/* Theme toggle */
+.theme-toggle{display:flex;align-items:center;gap:6px;background:var(--bg-card2);
+  border:1px solid var(--border-bright);border-radius:20px;padding:4px 10px;cursor:pointer;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary);
+  transition:all .2s;user-select:none;white-space:nowrap}
+.theme-toggle:hover{border-color:var(--accent-us);color:var(--text-primary)}
+.theme-toggle-icon{font-size:13px;line-height:1;transition:transform .3s}
+.theme-toggle-label{letter-spacing:.06em;text-transform:uppercase}
+/* Toggle track */
+.theme-track{width:32px;height:16px;background:var(--border);border-radius:8px;position:relative;
+  transition:background .3s;flex-shrink:0}
+.theme-track::after{content:'';position:absolute;top:2px;left:2px;width:12px;height:12px;
+  background:var(--text-dim);border-radius:50%;transition:transform .25s,background .25s}
+body.light-mode .theme-track{background:rgba(79,195,247,.35)}
+body.light-mode .theme-track::after{transform:translateX(16px);background:var(--accent-us)}
+.badge{font-family:'JetBrains Mono',monospace;font-size:12px;padding:5px 12px;border-radius:20px;
+  letter-spacing:.08em;font-weight:500;display:inline-flex;align-items:center;gap:5px}
+.badge-live-green{background:rgba(74,222,128,.12);color:var(--gain);border:1px solid rgba(74,222,128,.3)}
+.badge-live-red  {background:rgba(248,113,113,.12);color:var(--loss);border:1px solid rgba(248,113,113,.3)}
+.badge-refresh{background:rgba(79,195,247,.1);color:#4fc3f7;border:1px solid rgba(79,195,247,.25);cursor:pointer;transition:background .2s}
+.badge-refresh:hover{background:rgba(79,195,247,.22)}
+.live-dot-green{width:6px;height:6px;background:var(--gain);border-radius:50%;animation:pdot 2s infinite;flex-shrink:0}
+.live-dot-red  {width:6px;height:6px;background:var(--loss);border-radius:50%;flex-shrink:0}
+@keyframes pdot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+.refresh-timer{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim)}
+
+/* MARKETS CARD — single tabbed card */
+.markets-card{background:var(--bg-card);border-radius:var(--radius);border:1px solid var(--border);
+  overflow:hidden;margin-bottom:16px;transition:border-color .3s,box-shadow .3s;border-top:2px solid var(--accent-us)}
+.markets-card:hover{box-shadow:0 0 32px rgba(79,195,247,.08)}
+.mkt-card-header{display:flex;align-items:center;gap:10px;padding:11px 16px;
+  background:var(--bg-card2);border-bottom:1px solid var(--border)}
+.mkt-card-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent-us)}
+
+/* Tab bar */
+.mkt-tab-bar{display:flex;background:var(--bg-card2);border-bottom:1px solid var(--border);overflow-x:auto;scrollbar-width:none}
+.mkt-tab-bar::-webkit-scrollbar{display:none}
+.mkt-tab{display:flex;align-items:center;gap:10px;padding:14px 22px;border:none;background:transparent;
+  cursor:pointer;transition:all .2s;white-space:nowrap;border-bottom:3px solid transparent;
+  margin-bottom:-1px;flex-shrink:0;position:relative}
+.mkt-tab:hover{background:rgba(255,255,255,.04)}
+.mkt-tab.active{background:var(--bg-card);border-bottom-color:var(--accent-us)}
+.mkt-tab-flag{font-size:20px;line-height:1}
+.mkt-tab-label{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text-dim)}
+.mkt-tab.active .mkt-tab-label{color:var(--text-primary)}
+.mkt-tab-sub{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.08em}
+/* per-country accent on active tab */
+.mkt-tab[id="tab-ca"].active{border-bottom-color:var(--accent-ca)}
+.mkt-tab[id="tab-ca"].active .mkt-tab-label{color:var(--accent-ca)}
+.mkt-tab[id="tab-us"].active{border-bottom-color:var(--accent-us)}
+.mkt-tab[id="tab-us"].active .mkt-tab-label{color:var(--accent-us)}
+.mkt-tab[id="tab-au"].active{border-bottom-color:var(--accent-au)}
+.mkt-tab[id="tab-au"].active .mkt-tab-label{color:var(--accent-au)}
+
+/* Tab panes */
+.mkt-pane{display:none}
+.mkt-pane.active{display:block}
+
+/* Per-country sidebar radio colors */
+.card-sidebar.ca .sym-cb input:checked~.sym-cb-box{background:var(--accent-ca);border-color:var(--accent-ca)}
+.card-sidebar.us .sym-cb input:checked~.sym-cb-box{background:var(--accent-us);border-color:var(--accent-us)}
+.card-sidebar.au .sym-cb input:checked~.sym-cb-box{background:var(--accent-au);border-color:var(--accent-au)}
+
+/* CARD INNER: chart left, sidebar right */
+.card-inner{display:flex;min-height:440px}
+.chart-area{flex:1;min-width:0;display:flex;flex-direction:column;border-right:1px solid var(--border)}
+.tv-frame{flex:1;position:relative;background:var(--bg-base);overflow:hidden;min-height:440px}
+.tv-frame iframe{width:100%;height:100%;border:none;position:absolute;inset:0}
+.tv-loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  background:var(--bg-base);flex-direction:column;gap:12px;transition:opacity .5s;z-index:2}
+.tv-loading.hidden{opacity:0;pointer-events:none}
+.spinner{width:26px;height:26px;border:2px solid var(--border);border-top-color:var(--accent-us);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tv-loading p{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.1em}
+
+/* Instructions panel shown before any symbol is selected */
+.tv-instructions{display:flex;flex-direction:column;align-items:center;gap:12px;padding:32px 28px;max-width:360px;text-align:center}
+.tv-inst-icon{font-size:36px;line-height:1}
+.tv-inst-title{font-size:14px;font-weight:700;color:var(--text-primary);letter-spacing:.04em}
+.tv-inst-body{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);line-height:1.65;letter-spacing:.02em}
+.tv-inst-note{color:var(--gold);font-size:12px}
+
+/* RIGHT SIDEBAR */
+.card-sidebar{width:220px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-card)}
+.sidebar-section{padding:10px 10px 8px;border-bottom:1px solid var(--border)}
+.sidebar-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+/* search bar */
+.search-wrap{position:relative}
+.sym-search{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-base);
+  border:1px solid var(--border);border-radius:5px;color:var(--text-primary);
+  padding:6px 10px;width:100%;outline:none;transition:border-color .2s}
+.sym-search::placeholder{color:var(--text-dim)}
+.sym-search:focus{border-color:var(--border-bright)}
+.add-sym-btn{width:100%;margin-top:5px;font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:5px 0;background:rgba(79,195,247,.1);border:1px solid rgba(79,195,247,.25);color:#4fc3f7;
+  border-radius:5px;cursor:pointer;transition:all .2s;letter-spacing:.05em}
+.add-sym-btn:hover{background:rgba(79,195,247,.22);border-color:rgba(79,195,247,.45)}
+.add-sym-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* autocomplete */
+.sym-dropdown{position:absolute;top:calc(100% + 3px);left:0;right:0;background:var(--bg-card2);
+  border:1px solid var(--border-bright);border-radius:7px;z-index:999;max-height:190px;overflow-y:auto;
+  box-shadow:0 8px 28px rgba(0,0,0,.6);display:none}
+.sym-dropdown.open{display:block;animation:dropin .13s ease}
+@keyframes dropin{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+.sd-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;cursor:pointer;
+  border-bottom:1px solid rgba(30,45,61,.5);transition:background .1s;gap:6px}
+.sd-item:last-child{border-bottom:none}
+.sd-item:hover,.sd-item.focused{background:rgba(255,255,255,.05)}
+.sd-left{display:flex;align-items:center;gap:6px;min-width:0}
+.sd-sym{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text-primary);flex-shrink:0}
+.sd-sym mark,.sd-name mark{background:none}
+.sd-sym mark{color:var(--accent-us)}.ca .sd-sym mark{color:var(--accent-ca)}.au .sd-sym mark{color:var(--accent-au)}
+.sd-name{font-size:12px;color:var(--text-dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sd-name mark{color:var(--text-secondary)}
+.sd-exbadge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:1px 5px;border-radius:3px;flex-shrink:0}
+.ex-tsx{background:rgba(255,107,53,.12);color:var(--accent-ca);border:1px solid rgba(255,107,53,.2)}
+.ex-tsxv{background:rgba(255,160,80,.1);color:#ffaa55;border:1px solid rgba(255,160,80,.2)}
+.ex-cse{background:rgba(255,200,80,.1);color:#ffcc55;border:1px solid rgba(255,200,80,.2)}
+.ex-nyse{background:rgba(79,195,247,.1);color:var(--accent-us);border:1px solid rgba(79,195,247,.2)}
+.ex-nasdaq{background:rgba(120,160,255,.1);color:#7ea8ff;border:1px solid rgba(120,160,255,.2)}
+.ex-amex{background:rgba(160,120,255,.1);color:#b07eff;border:1px solid rgba(160,120,255,.2)}
+.ex-asx{background:rgba(105,217,154,.1);color:var(--accent-au);border:1px solid rgba(105,217,154,.2)}
+.sd-empty{padding:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center;letter-spacing:.06em}
+
+/* symbol list */
+.sym-list-wrap{overflow-y:auto;padding:4px 6px 6px;max-height:408px}
+.sym-list-wrap::-webkit-scrollbar{width:5px}
+.sym-list-wrap::-webkit-scrollbar-track{background:var(--bg-base)}
+.sym-list-wrap::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
+.sym-list-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent-us)}
+.sym-row{display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;transition:background .12s}
+.sym-row:hover{background:rgba(255,255,255,.04)}
+
+/* radio-style single-select */
+.sym-cb{position:relative;flex-shrink:0;width:15px;height:15px;cursor:pointer}
+.sym-cb input{position:absolute;opacity:0;width:0;height:0}
+.sym-cb-box{display:block;width:15px;height:15px;border:1px solid var(--border-bright);border-radius:3px;
+  background:transparent;transition:all .15s;position:relative}
+.sym-cb input:checked~.sym-cb-box{background:var(--accent-us);border-color:var(--accent-us)}
+.ca .sym-cb input:checked~.sym-cb-box{background:var(--accent-ca);border-color:var(--accent-ca)}
+.au .sym-cb input:checked~.sym-cb-box{background:var(--accent-au);border-color:var(--accent-au)}
+.sym-cb-box::after{content:'';position:absolute;display:none;left:4px;top:1px;width:4px;height:8px;
+  border:1.5px solid #080c10;border-top:none;border-left:none;transform:rotate(45deg)}
+.sym-cb input:checked~.sym-cb-box::after{display:block}
+
+.sym-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sym-text.dimmed{opacity:.35}
+.sym-del{background:none;border:none;cursor:pointer;font-size:13px;color:var(--text-dim);padding:0 2px;line-height:1;flex-shrink:0;transition:color .15s}
+.sym-del:hover{color:var(--loss)}
+.sym-empty{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center;padding:18px 8px;letter-spacing:.06em}
+
+@media(max-width:680px){
+  .card-inner{flex-direction:column}
+  .card-sidebar{width:100%;border-top:1px solid var(--border)}
+  .chart-area{border-right:none}
+  .tv-frame{min-height:280px}
+}
+
+/* BOTTOM SECTION: indices (2/3) + forex (1/3) */
+.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+
+/* INDICES CARD */
+.idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:hidden}
+.idx-card .tradingview-widget-container{width:100%!important}
+.idx-card .tradingview-widget-container__widget{width:100%!important}
+/* Header */
+.idx-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.idx-header-left{display:flex;align-items:center;gap:10px}
+.idx-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--gold)}
+/* Search bar */
+.idx-tab-bar{display:flex;align-items:center;background:var(--bg-card2);border-bottom:1px solid var(--border);gap:0;flex-wrap:wrap;padding:6px 12px}
+.idx-tab-spacer{flex:1}
+.idx-search-wrap{display:flex;align-items:center;gap:6px;position:relative}
+.idx-search{font-family:'JetBrains Mono',monospace;font-size:11px;background:var(--bg-base);
+  border:1px solid var(--border);border-radius:5px;color:var(--text-primary);
+  padding:5px 10px;width:260px;outline:none;transition:border-color .2s}
+.idx-search::placeholder{color:var(--text-dim)}
+.idx-search:focus{border-color:var(--gold)}
+.idx-add-btn{font-family:'JetBrains Mono',monospace;font-size:10px;padding:5px 12px;
+  background:rgba(251,191,36,.1);border:1px solid rgba(251,191,36,.25);color:var(--gold);
+  border-radius:5px;cursor:pointer;transition:all .2s;white-space:nowrap}
+.idx-add-btn:hover{background:rgba(251,191,36,.22);border-color:rgba(251,191,36,.45)}
+/* Symbol search dropdown (reuses .sd-* styles from stock search) */
+.idx-sym-dropdown{position:absolute;top:calc(100% + 4px);left:0;width:340px;
+  background:var(--bg-card2);border:1px solid var(--border-bright);border-radius:7px;
+  z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.6);display:none}
+.idx-sym-dropdown.open{display:block;animation:dropin .13s ease}
+/* List tab bar — "Adding to: Indices / Crypto" */
+.idx-listtab-bar{display:flex;align-items:center;gap:8px;padding:7px 14px;
+  background:var(--bg-base);border-bottom:1px solid var(--border)}
+.idx-listtab-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);
+  letter-spacing:.07em;text-transform:uppercase;margin-right:2px}
+.idx-listtab{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;
+  letter-spacing:.07em;text-transform:uppercase;background:transparent;
+  border:1px solid var(--border);border-radius:4px;color:var(--text-dim);
+  padding:4px 12px;cursor:pointer;transition:all .2s}
+.idx-listtab:hover{border-color:var(--border-bright);color:var(--text-primary)}
+.idx-listtab.active{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.35);color:var(--gold)}
+/* Symbol pill bar */
+.idx-sym-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:var(--bg-base);
+  border-bottom:1px solid var(--border);min-height:36px}
+.idx-sym-bar:empty{display:none}
+.idx-pill{display:inline-flex;align-items:center;gap:5px;background:var(--bg-card2);
+  border:1px solid var(--border-bright);border-radius:20px;padding:3px 10px 3px 11px;
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-secondary)}
+.idx-pill-sym{color:var(--text-primary);font-weight:600}
+.idx-pill-del{background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:13px;
+  line-height:1;padding:0 0 0 2px;transition:color .15s}
+.idx-pill-del:hover{color:var(--loss)}
+/* Copyright */
+.idx-copyright{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);
+  padding:5px 14px 7px;letter-spacing:.04em;border-top:1px solid var(--border)}
+.idx-copyright a{color:var(--accent-us);text-decoration:none}
+.idx-copyright a:hover{text-decoration:underline}
+
+/* FOREX TABLE */
+.fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:hidden}
+.fx-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap}
+.fx-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* Inline add-pair row */
+.fx-add-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
+.fx-cur-wrap{position:relative;flex-shrink:0}
+.fx-cur-input{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-base);
+  border:1px solid var(--border);border-radius:5px;color:var(--text-primary);
+  padding:5px 8px;width:130px;outline:none;transition:border-color .2s}
+.fx-cur-input::placeholder{color:var(--text-dim)}
+.fx-cur-input:focus{border-color:var(--accent-fx)}
+.fx-arrow{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-dim);flex-shrink:0}
+.fx-cur-drop{position:absolute;top:calc(100% + 3px);left:0;min-width:200px;
+  background:var(--bg-card2);border:1px solid var(--border-bright);border-radius:7px;
+  z-index:999;max-height:220px;overflow-y:auto;box-shadow:0 8px 28px rgba(0,0,0,.6);display:none}
+.fx-cur-drop.open{display:block;animation:dropin .13s ease}
+.fx-cur-opt{display:flex;align-items:center;gap:8px;padding:7px 11px;cursor:pointer;
+  border-bottom:1px solid rgba(30,45,61,.4);transition:background .1s;font-family:'JetBrains Mono',monospace;font-size:12px}
+.fx-cur-opt:last-child{border-bottom:none}
+.fx-cur-opt:hover,.fx-cur-opt.focused{background:rgba(192,132,252,.08)}
+.fx-cur-opt-code{font-weight:700;color:var(--text-primary);min-width:42px}
+.fx-cur-opt-name{color:var(--text-dim);font-size:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fx-title{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-fx)}
+.fx-updated{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:.04em;margin-left:2px}
+.fx-tv-cell{padding:0 4px!important;min-width:160px;vertical-align:middle;overflow:hidden;height:52px}
+.fx-tv-wrap{width:154%;transform:scale(0.65);transform-origin:top left;height:80px;pointer-events:none}
+.fx-add-btn{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 12px;
+  background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.25);color:var(--accent-fx);
+  border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto}
+.fx-add-btn:hover{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.45)}
+.fx-table-wrap{overflow-x:auto}
+table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px}
+.fx-table thead th{padding:7px 14px;text-align:right;color:var(--text-dim);font-size:9px;letter-spacing:.1em;
+  text-transform:uppercase;background:var(--bg-card2);border-bottom:1px solid var(--border);white-space:nowrap}
+.fx-table thead th:first-child,.fx-table thead th:nth-child(2){text-align:left}
+.fx-table tbody tr{border-bottom:1px solid rgba(30,45,61,.5);transition:background .15s}
+.fx-table tbody tr:last-child{border-bottom:none}
+.fx-table tbody tr:hover{background:rgba(255,255,255,.025)}
+.fx-table tbody td{padding:4px 14px;text-align:right;white-space:nowrap;vertical-align:middle}
+.fx-table tbody td:first-child{text-align:left;padding:8px 14px}
+.fx-table tbody td:nth-child(2){padding:2px 4px;text-align:left;min-width:200px}
+.fx-pair-cell{display:flex;align-items:center;gap:8px}
+.fx-shortcode{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:.06em;min-width:30px;flex-shrink:0}
+.fx-flags{font-size:13px;letter-spacing:1px;flex-shrink:0}
+.fx-pair-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text-primary)}
+.fx-price{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text-primary)}
+.fx-chg{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:500}
+.fx-chg.pos{color:var(--gain)}.fx-chg.neg{color:var(--loss)}.fx-chg.neu{color:var(--text-dim)}
+.fx-del{background:none;border:none;cursor:pointer;color:var(--text-dim);font-size:14px;padding:2px 5px;border-radius:4px;opacity:0;transition:opacity .15s,color .15s}
+.fx-table tbody tr:hover .fx-del{opacity:1}
+.fx-del:hover{color:var(--loss)}
+.fx-msg td{text-align:center;padding:20px;color:var(--text-dim);font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.08em}
+
+/* FX pair option kept for possible future use */
+
+/* Hide TradingView Market Overview internal tab bar when we have our own */
+#idx-widget-wrap .tv-widget-tabs,
+#idx-widget-wrap [class*="tabs-"],
+#idx-widget-wrap [class*="tabsRow"],
+#idx-widget-wrap [class*="tab-row"],
+#idx-widget-wrap [class*="tabRow"]{display:none!important}
+
+/* MARKET STATUS BAR */
+.mkt-status-bar{display:flex;align-items:center;gap:12px;padding:9px 16px;
+  border-bottom:1px solid var(--border);background:var(--bg-card2);flex-wrap:wrap;min-height:38px}
+.mkt-status-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.mkt-status-dot.open{background:var(--gain);box-shadow:0 0 6px rgba(74,222,128,.6);animation:pdot 2s infinite}
+.mkt-status-dot.closed{background:var(--loss)}
+.mkt-status-label{font-size:13px;font-weight:700;letter-spacing:.04em}
+.mkt-status-label.open{color:var(--gain)}
+.mkt-status-label.closed{color:var(--loss)}
+.mkt-status-sep{width:1px;height:14px;background:var(--border);flex-shrink:0}
+.mkt-status-detail{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--text-secondary);letter-spacing:.03em}
+.mkt-status-detail b{color:var(--text-primary);font-weight:600}
+.mkt-status-tz{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);margin-left:auto;letter-spacing:.04em}
+.heatmap-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);
+  overflow:hidden;margin-bottom:16px;transition:border-color .3s,box-shadow .3s}
+.heatmap-card:hover{box-shadow:0 0 32px rgba(79,195,247,.06)}
+.heatmap-header{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;
+  background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap;gap:10px}
+.heatmap-header-left{display:flex;align-items:center;gap:10px}
+.heatmap-title{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-primary)}
+.heatmap-controls{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.heatmap-ctrl-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);
+  letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.heatmap-select-wrap{position:relative;display:inline-flex;align-items:center}
+.heatmap-select{font-family:'JetBrains Mono',monospace;font-size:11px;
+  background:var(--bg-base);border:1px solid var(--border-bright);border-radius:6px;
+  color:var(--text-primary);padding:5px 28px 5px 10px;outline:none;cursor:pointer;
+  appearance:none;-webkit-appearance:none;transition:border-color .2s;min-width:200px}
+.heatmap-select:hover,.heatmap-select:focus{border-color:var(--accent-us)}
+.heatmap-select option,.heatmap-select optgroup{background:var(--bg-card2);color:var(--text-primary)}
+.heatmap-select-arrow{position:absolute;right:9px;pointer-events:none;
+  font-size:10px;color:var(--text-secondary)}
+.heatmap-widget-wrap{width:100%;position:relative}
+.heatmap-widget-wrap .tradingview-widget-container{width:100%!important;height:100%!important}
+.heatmap-widget-wrap .tradingview-widget-container__widget{width:100%!important;height:100%!important}
+.heatmap-copyright{font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);
+  padding:5px 14px 7px;letter-spacing:.04em;border-top:1px solid var(--border)}
+.heatmap-copyright a{color:var(--accent-us);text-decoration:none}
+.heatmap-copyright a:hover{text-decoration:underline}
+.fade-in{animation:fup .4s ease both}
+@keyframes fup{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.footer{text-align:center;padding:14px;font-family:'JetBrains Mono',monospace;font-size:9px;
+  color:var(--text-dim);letter-spacing:.08em;border-top:1px solid var(--border);margin-top:8px}
+/* ── AUTH OVERLAY ─────────────────────────────────── */
+#auth-overlay{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:flex-start;justify-content:center;
+  padding-top:60px;
+  background:var(--bg-base);
+  font-family:'Syne',sans-serif;
+  overflow-y:auto;
+}
+#auth-overlay.hidden{display:none}
+.auth-box{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:16px;padding:40px 44px;max-width:420px;width:90%;
+  text-align:center;box-shadow:0 24px 64px rgba(0,0,0,.5);
+  animation:fup .4s ease both;
+}
+.auth-logo{
+  width:52px;height:52px;background:linear-gradient(135deg,#4fc3f7,#69d99a);
+  border-radius:13px;display:flex;align-items:center;justify-content:center;
+  font-size:24px;font-weight:800;color:#080c10;margin:0 auto 20px;
+}
+.auth-title{font-size:20px;font-weight:800;letter-spacing:.04em;margin-bottom:6px}
+.auth-subtitle{font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--text-secondary);letter-spacing:.06em;margin-bottom:28px;line-height:1.6}
+.auth-btn-google{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  width:100%;padding:12px 20px;border-radius:8px;border:1px solid var(--border-bright);
+  background:var(--bg-card2);color:var(--text-primary);font-family:'Syne',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.03em;
+}
+.auth-btn-google:hover{background:rgba(79,195,247,.1);border-color:var(--accent-us)}
+.auth-btn-google:disabled{opacity:.5;cursor:not-allowed}
+.auth-google-icon{width:20px;height:20px;flex-shrink:0}
+.auth-pending{
+  padding:20px;background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
+  border-radius:8px;margin-top:20px;
+}
+.auth-pending-icon{font-size:28px;margin-bottom:10px}
+.auth-pending-title{font-size:15px;font-weight:700;color:var(--gold);margin-bottom:6px}
+.auth-pending-body{font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--text-secondary);line-height:1.65;letter-spacing:.02em}
+.auth-error{font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--loss);margin-top:14px;letter-spacing:.04em}
+.auth-signout-link{
+  font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);
+  margin-top:16px;cursor:pointer;text-decoration:underline;display:inline-block;
+}
+.auth-signout-link:hover{color:var(--text-secondary)}
+
+/* ── USER AVATAR in header ───────────────────────── */
+.user-badge{
+  display:flex;align-items:center;gap:8px;
+  background:var(--bg-card2);border:1px solid var(--border-bright);
+  border-radius:20px;padding:4px 12px 4px 4px;cursor:default;
+}
+.user-avatar{
+  width:26px;height:26px;border-radius:50%;object-fit:cover;flex-shrink:0;
+  border:1.5px solid var(--border-bright);
+}
+.user-avatar-fallback{
+  width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#4fc3f7,#69d99a);
+  display:flex;align-items:center;justify-content:center;font-size:11px;
+  font-weight:800;color:#080c10;flex-shrink:0;
+}
+.user-name{font-family:'JetBrains Mono',monospace;font-size:11px;
+  color:var(--text-secondary);letter-spacing:.04em;max-width:120px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.user-signout{
+  font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);
+  background:none;border:none;cursor:pointer;padding:2px 0 2px 4px;
+  border-left:1px solid var(--border);margin-left:4px;transition:color .15s;
+  letter-spacing:.05em;text-transform:uppercase;
+}
+.user-signout:hover{color:var(--loss)}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg-base)}
+::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
+</style>
+</head>
+<body>
+
+<!-- ── AUTH OVERLAY ── shown until user is authenticated & approved -->
+<div id="auth-overlay">
+  <div class="auth-box">
+    <div class="auth-logo">Σ</div>
+    <div class="auth-title">Global Market Intelligence</div>
+    <div class="auth-subtitle">Sign in to access your personalised dashboard.<br>Access is by approval only.<br><br>A sign-in popup will appear — please allow popups for this site if prompted.</div>
+
+    <!-- Sign-in panel -->
+    <div id="auth-signin-panel">
+      <button class="auth-btn-google" id="auth-google-btn" onclick="signInWithGoogle()">
+        <svg class="auth-google-icon" viewBox="0 0 48 48">
+          <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+          <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+          <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+          <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+          <path fill="none" d="M0 0h48v48H0z"/>
+        </svg>
+        Continue with Google
+      </button>
+      <div class="auth-error" id="auth-error" style="display:none"></div>
+    </div>
+
+    <!-- Pending approval panel (shown after sign-in if not yet approved) -->
+    <div id="auth-pending-panel" style="display:none">
+      <div class="auth-pending">
+        <div class="auth-pending-icon">⏳</div>
+        <div class="auth-pending-title">Access Pending</div>
+        <div class="auth-pending-body" id="auth-pending-msg">
+          Your request has been sent to the administrator.<br><br>
+          You'll have access as soon as it's approved.<br>
+          Please check back shortly.
+        </div>
+      </div>
+      <span class="auth-signout-link" onclick="signOut()">Sign out / use a different account</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrapper">
+
+<!-- HEADER -->
+<div class="header-sticky-wrap">
+<header class="header fade-in">
+  <div class="header-left">
+    <div class="logo-mark">Σ</div>
+    <div>
+      <h1>GLOBAL MARKET INTELLIGENCE</h1>
+      <div class="header-subtitle">TSX · TSX-V · CSE · NYSE · NASDAQ · AMEX · ASX</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <span class="header-refreshed" id="header-refreshed">—</span>
+    <!-- User badge (populated by auth) -->
+    <div class="user-badge" id="user-badge" style="display:none">
+      <div class="user-avatar-fallback" id="user-avatar-fallback"></div>
+      <img class="user-avatar" id="user-avatar-img" style="display:none" alt=""/>
+      <span class="user-name" id="user-name-label"></span>
+      <button class="user-signout" onclick="signOut()" title="Sign out">Sign out</button>
+    </div>
+    <button class="theme-toggle" id="theme-toggle-btn" onclick="toggleTheme()" title="Toggle light/dark mode">
+      <span class="theme-toggle-icon" id="theme-icon">🌙</span>
+      <span class="theme-track" id="theme-track"></span>
+      <span class="theme-toggle-label" id="theme-label">Dark</span>
+    </button>
+    <button class="badge badge-refresh" onclick="window.location.reload()" title="Refresh page">⟳ Refresh</button>
+  </div>
+</header>
+</div>
+
+<!-- MARKETS CARD — single tabbed card for all three countries -->
+<div class="markets-card fade-in" id="markets-card">
+
+  <!-- Card heading -->
+  <div class="mkt-card-header">
+    <span class="mkt-card-title">📈 Stock Charts</span>
+    <span class="badge badge-live-green" style="font-size:9px"><span class="live-dot-green"></span>LIVE</span>
+    <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--text-dim);margin-left:auto;letter-spacing:.06em">TradingView</span>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="mkt-tab-bar">
+    <button class="mkt-tab active" id="tab-ca" onclick="switchTab('ca')">
+      <span class="mkt-tab-flag">🇨🇦</span>
+      <span class="mkt-tab-label">Canada</span>
+      <span class="mkt-tab-sub">TSX · TSX-V · CSE</span>
+    </button>
+    <button class="mkt-tab" id="tab-us" onclick="switchTab('us')">
+      <span class="mkt-tab-flag">🇺🇸</span>
+      <span class="mkt-tab-label">United States</span>
+      <span class="mkt-tab-sub">NYSE · NASDAQ · AMEX</span>
+    </button>
+    <button class="mkt-tab" id="tab-au" onclick="switchTab('au')">
+      <span class="mkt-tab-flag">🇦🇺</span>
+      <span class="mkt-tab-label">Australia</span>
+      <span class="mkt-tab-sub">ASX</span>
+    </button>
+  </div>
+
+  <!-- Tab pane: Canada -->
+  <div class="mkt-pane active" id="pane-ca">
+    <div class="mkt-status-bar" id="status-ca"></div>
+    <div class="card-inner">
+      <div class="chart-area">
+        <div class="tv-frame" id="tv-ca">
+          <div class="tv-loading" id="loading-ca">
+            <div class="tv-instructions">
+              <div class="tv-inst-icon">📈</div>
+              <div class="tv-inst-title">Search for a Symbol</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Canadian stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-sidebar ca" id="sidebar-ca">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Search &amp; Add Symbol</div>
+          <div class="search-wrap">
+            <input class="sym-search" id="search-ca" placeholder="Ticker or company name…" autocomplete="off"
+              oninput="onSI('ca')" onkeydown="onSK(event,'ca')" onfocus="onSF('ca')"/>
+            <div class="sym-dropdown" id="dropdown-ca"></div>
+          </div>
+        </div>
+        <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
+        <div class="sym-list-wrap" id="symlist-ca"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab pane: United States -->
+  <div class="mkt-pane" id="pane-us">
+    <div class="mkt-status-bar" id="status-us"></div>
+    <div class="card-inner">
+      <div class="chart-area">
+        <div class="tv-frame" id="tv-us">
+          <div class="tv-loading" id="loading-us">
+            <div class="tv-instructions">
+              <div class="tv-inst-icon">📈</div>
+              <div class="tv-inst-title">Search for a Symbol</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any US stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-sidebar us" id="sidebar-us">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Search &amp; Add Symbol</div>
+          <div class="search-wrap">
+            <input class="sym-search" id="search-us" placeholder="Ticker or company name…" autocomplete="off"
+              oninput="onSI('us')" onkeydown="onSK(event,'us')" onfocus="onSF('us')"/>
+            <div class="sym-dropdown" id="dropdown-us"></div>
+          </div>
+        </div>
+        <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
+        <div class="sym-list-wrap" id="symlist-us"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab pane: Australia -->
+  <div class="mkt-pane" id="pane-au">
+    <div class="mkt-status-bar" id="status-au"></div>
+    <div class="card-inner">
+      <div class="chart-area">
+        <div class="tv-frame" id="tv-au">
+          <div class="tv-loading" id="loading-au">
+            <div class="tv-instructions">
+              <div class="tv-inst-icon">📈</div>
+              <div class="tv-inst-title">Search for a Symbol</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Australian stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-sidebar au" id="sidebar-au">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Search &amp; Add Symbol</div>
+          <div class="search-wrap">
+            <input class="sym-search" id="search-au" placeholder="Ticker or company name…" autocomplete="off"
+              oninput="onSI('au')" onkeydown="onSK(event,'au')" onfocus="onSF('au')"/>
+            <div class="sym-dropdown" id="dropdown-au"></div>
+          </div>
+        </div>
+        <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
+        <div class="sym-list-wrap" id="symlist-au"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /markets-card -->
+
+<!-- BOTTOM SECTION: Indices (2/3 left), Forex (1/3 right) -->
+<div class="bottom-grid fade-in" style="animation-delay:.2s">
+
+  <!-- INDICES CARD (left, 2/3) -->
+  <div class="idx-card">
+    <!-- Card header -->
+    <div class="idx-header">
+      <div class="idx-header-left">
+        <span class="idx-title">📊 Major Indices &amp; Crypto</span>
+        <span class="badge badge-live-green" style="font-size:9px"><span class="live-dot-green"></span>LIVE</span>
+      </div>
+    </div>
+    <!-- Search / Add bar -->
+    <div class="idx-tab-bar">
+      <div class="idx-tab-spacer"></div>
+      <div class="idx-search-wrap" style="position:relative">
+        <input class="idx-search" id="idx-search" placeholder="Search symbol to add (e.g. SPX, BTC)…" autocomplete="off"
+          oninput="idxOnInput()" onkeydown="idxSearchKey(event)" onfocus="idxOnFocus()" />
+        <div class="idx-sym-dropdown" id="idx-sym-dropdown"></div>
+        <button class="idx-add-btn" onclick="idxAddFromInput()">+ Add</button>
+      </div>
+    </div>
+    <!-- Tab selector for which list to add to -->
+    <div class="idx-listtab-bar">
+      <span class="idx-listtab-label">Adding to:</span>
+      <button class="idx-listtab active" id="idx-listtab-indices" onclick="switchIdxTab('indices')">Indices</button>
+      <button class="idx-listtab" id="idx-listtab-crypto" onclick="switchIdxTab('crypto')">Crypto</button>
+    </div>
+    <!-- Symbol pill list -->
+    <div class="idx-sym-bar" id="idx-sym-bar"></div>
+    <!-- Widget container — internal TV tab bar hidden via CSS below -->
+    <div id="idx-widget-wrap" style="min-height:500px"></div>
+    <!-- Copyright -->
+    <div class="idx-copyright">
+      <a href="https://www.tradingview.com/markets/" rel="noopener nofollow" target="_blank">World markets</a> by TradingView
+    </div>
+  </div>
+
+  <!-- FOREX TABLE (right, 1/3) -->
+  <div class="fx-card">
+    <div class="fx-header">
+      <div class="fx-header-left">
+        <span class="fx-title">💱 Forex</span>
+        <span class="badge badge-live-green" style="font-size:9px"><span class="live-dot-green"></span>LIVE</span>
+      </div>
+      <div class="fx-add-row">
+        <div class="fx-cur-wrap">
+          <input class="fx-cur-input" id="fx-cur1" placeholder="From" autocomplete="off"
+            oninput="filterCurDrop('fx-drop1',this.value)" onfocus="openCurDrop('fx-drop1',this.value)" onkeydown="curInputKey(event,'fx-drop1')" style="width:90px"/>
+          <div class="fx-cur-drop" id="fx-drop1"></div>
+        </div>
+        <span class="fx-arrow">→</span>
+        <div class="fx-cur-wrap">
+          <input class="fx-cur-input" id="fx-cur2" placeholder="To" autocomplete="off"
+            oninput="filterCurDrop('fx-drop2',this.value)" onfocus="openCurDrop('fx-drop2',this.value)" onkeydown="curInputKey(event,'fx-drop2')" style="width:90px"/>
+          <div class="fx-cur-drop" id="fx-drop2"></div>
+        </div>
+        <button class="fx-add-btn" onclick="addCustomFxPair()">+ Add</button>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;padding:4px 12px 4px;border-bottom:1px solid var(--border);background:var(--bg-card2)">
+      <span class="fx-updated" id="fx-updated" style="font-size:9px">—</span>
+    </div>
+    <div class="fx-table-wrap">
+      <table class="fx-table">
+        <thead>
+          <tr>
+            <th style="text-align:left">Pair</th>
+            <th style="text-align:left">Price</th>
+            <th>1W</th><th>1M</th><th>6M</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="fx-tbody"><tr class="fx-msg"><td colspan="6">Loading rates…</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- STOCK HEATMAP -->
+<div class="heatmap-card fade-in" style="animation-delay:.3s" id="stock-heatmap-card">
+  <div class="heatmap-header">
+    <div class="heatmap-header-left">
+      <span class="heatmap-title">🟥 Stock Heatmap</span>
+      <span class="badge badge-live-green" style="font-size:9px"><span class="live-dot-green"></span>LIVE</span>
+    </div>
+    <div class="heatmap-controls">
+      <span class="heatmap-ctrl-label">Display</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="stock-heatmap-blocksize" onchange="rebuildStockHeatmap()" style="min-width:220px">
+          <option value="market_cap_basic" selected>Market Cap (Default)</option>
+          <option value="Value.Traded">Price × Volume (Turnover) 1D</option>
+          <option value="Value.Traded|1W">Price × Volume (Turnover) 1W</option>
+          <option value="Value.Traded|1M">Price × Volume (Turnover) 1M</option>
+          <option value="volume">Volume 1D</option>
+          <option value="volume|1W">Volume 1W</option>
+          <option value="volume|1M">Volume 1M</option>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+      <span class="heatmap-ctrl-label">Grouping</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="stock-heatmap-grouping" onchange="rebuildStockHeatmap()" style="min-width:140px">
+          <option value="sector" selected>Sector</option>
+          <option value="no_group">No Group</option>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+      <span class="heatmap-ctrl-label">Data Source</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="stock-heatmap-source" onchange="rebuildStockHeatmap()">
+          <optgroup label="United States">
+            <option value="SPX500" selected>S&amp;P 500</option>
+            <option value="SPX500_SectorIndustry">S&amp;P 500 (Sector / Industry)</option>
+            <option value="NDX">Nasdaq 100</option>
+            <option value="DJ30">Dow Jones 30</option>
+            <option value="AllUS">All US Stocks</option>
+            <option value="AllUSSmallCap">All US Small Cap</option>
+            <option value="AllUSMidSmallCap">All US Mid &amp; Small Cap</option>
+          </optgroup>
+          <optgroup label="Canada">
+            <option value="TSX">TSX (Canada)</option>
+          </optgroup>
+          <optgroup label="Australia">
+            <option value="ASX200">ASX 200</option>
+            <option value="AllAustralia">All Australia</option>
+          </optgroup>
+          <optgroup label="Europe">
+            <option value="EURONEXT">Euronext</option>
+            <option value="LSE">London Stock Exchange</option>
+            <option value="FWB">Frankfurt (XETRA)</option>
+            <option value="SIX">Swiss Exchange</option>
+          </optgroup>
+          <optgroup label="Asia / Pacific">
+            <option value="HKEX">Hong Kong (HKEX)</option>
+            <option value="SSE">Shanghai (SSE)</option>
+            <option value="SZSE">Shenzhen (SZSE)</option>
+            <option value="TSE">Tokyo (TSE)</option>
+            <option value="BSE">Bombay (BSE)</option>
+            <option value="NSE">National (NSE India)</option>
+          </optgroup>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+    </div>
+  </div>
+  <div class="heatmap-widget-wrap" id="stock-heatmap-wrap" style="height:550px"></div>
+  <div class="heatmap-copyright">
+    <a href="https://www.tradingview.com/heatmap/stock/" rel="noopener nofollow" target="_blank">Stock Heatmap</a> by TradingView
+  </div>
+</div>
+
+<!-- ETF HEATMAP -->
+<div class="heatmap-card fade-in" style="animation-delay:.4s" id="etf-heatmap-card">
+  <div class="heatmap-header">
+    <div class="heatmap-header-left">
+      <span class="heatmap-title">🔵 ETF Heatmap</span>
+      <span class="badge badge-live-green" style="font-size:9px"><span class="live-dot-green"></span>LIVE</span>
+    </div>
+    <div class="heatmap-controls">
+      <span class="heatmap-ctrl-label">Display</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="etf-heatmap-blocksize" onchange="rebuildEtfHeatmap()" style="min-width:220px">
+          <option value="Value.Traded" selected>Price × Volume (Turnover) 1D</option>
+          <option value="Value.Traded|1W">Price × Volume (Turnover) 1W</option>
+          <option value="Value.Traded|1M">Price × Volume (Turnover) 1M</option>
+          <option value="volume">Volume 1D</option>
+          <option value="volume|1W">Volume 1W</option>
+          <option value="volume|1M">Volume 1M</option>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+      <span class="heatmap-ctrl-label">Grouping</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="etf-heatmap-grouping" onchange="rebuildEtfHeatmap()" style="min-width:140px">
+          <option value="asset_class" selected>Asset Class</option>
+          <option value="no_group">No Group</option>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+      <span class="heatmap-ctrl-label">Data Source</span>
+      <div class="heatmap-select-wrap">
+        <select class="heatmap-select" id="etf-heatmap-source" onchange="rebuildEtfHeatmap()">
+          <optgroup label="Canada">
+            <option value="AllCAEtf" selected>All Canada ETFs</option>
+          </optgroup>
+          <optgroup label="United States">
+            <option value="AllUSEtf">All US ETFs</option>
+          </optgroup>
+          <optgroup label="Australia">
+            <option value="AllAustraliAEtf">All Australia ETFs</option>
+          </optgroup>
+          <optgroup label="Europe">
+            <option value="AllEuropeEtf">All Europe ETFs</option>
+          </optgroup>
+        </select>
+        <span class="heatmap-select-arrow">▾</span>
+      </div>
+    </div>
+  </div>
+  <div class="heatmap-widget-wrap" id="etf-heatmap-wrap" style="height:550px"></div>
+  <div class="heatmap-copyright">
+    <a href="https://www.tradingview.com/heatmap/etf/" rel="noopener nofollow" target="_blank">ETF Heatmap</a> by TradingView
+  </div>
+</div>
+
+<div class="footer">GLOBAL MARKET INTELLIGENCE DASHBOARD · STOCK CHARTS: TRADINGVIEW · INDICES: TRADINGVIEW WIDGET · FOREX LIVE PRICE: TRADINGVIEW · FOREX HISTORICAL %: ECB VIA FRANKFURTER.APP · FOR INFORMATIONAL PURPOSES ONLY · NOT FINANCIAL ADVICE</div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════
+//  ENVIRONMENT — staging bypass (hostname-keyed, safe to merge)
+// ═══════════════════════════════════════════════════
+const IS_STAGING = window.location.hostname === 'jtnosnw.github.io'
+                && window.location.search.includes('staging=true');
+console.log('[GMI Staging]', IS_STAGING, '| host:', window.location.hostname, '| search:', window.location.search);
+
+// ═══════════════════════════════════════════════════
+//  FIREBASE CONFIGURATION
+// ═══════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey:            "AIzaSyAejkIQRlw5dv3LfqRAtI0yzlj2wt3Px1w",
+  authDomain:        "global-market-intel-site.firebaseapp.com",
+  projectId:         "global-market-intel-site",
+  storageBucket:     "global-market-intel-site.firebasestorage.app",
+  messagingSenderId: "1057090838537",
+  appId:             "1:1057090838537:web:22adeb8dbd95093f6a98d8",
+  measurementId:     "G-27JW674VBY"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth      = firebase.auth();
+const db        = firebase.firestore();
+const provider  = new firebase.auth.GoogleAuthProvider();
+
+// Force auth redirect to go through Firebase's own domain (firebaseapp.com)
+// rather than the GitHub Pages domain. This bypasses GitHub Pages storage
+// restrictions that prevent the redirect flow from completing.
+auth.useDeviceLanguage();
+auth.setPersistence(firebase.auth.Auth.Persistence.SESSION).catch(e=>console.warn('setPersistence:',e));
+
+// EmailJS config — called via fetch (no SDK needed, avoids tracker blocking)
+const EJS_SERVICE  = 'service_y15atsq';
+const EJS_TEMPLATE = 'template_9hlz00i';
+const EJS_KEY      = 'KAW98Xpmmzpe6H1wQ';
+
+// ═══════════════════════════════════════════════════
+//  RUNTIME STATE
+// ═══════════════════════════════════════════════════
+let customSym   = {ca:[],us:[],au:[]};
+let activeFxPairs = [];
+const FX_DEFAULTS = ['CADAUD','CADUSD','CADEUR','CADGBP','CADJPY'];
+
+// Indices widget state — declared here so loadStateFromFirestore can reference them
+const IDX_DEFAULTS={
+  indices:[
+    {s:'FOREXCOM:SPXUSD', d:'S&P 500 Index'},
+    {s:'FOREXCOM:DJI',    d:'Dow Jones Industrial Average Index'},
+    {s:'FXOPEN:NDQM',     d:'Nasdaq 100 Index (FXOpen)', 'currency-logoid':'country/US'},
+    {s:'FRED:NDQCOM',     d:'Nasdaq Composite Index', logoid:'indices/nasdaq-composite'}
+  ],
+  crypto:[
+    {s:'BITSTAMP:BTCUSD', d:'Bitcoin to USD'},
+    {s:'BITSTAMP:ETHUSD', d:'Ethereum to USD'}
+  ]
+};
+let idxSymbols={
+  indices:[...IDX_DEFAULTS.indices.map(r=>({...r}))],
+  crypto: [...IDX_DEFAULTS.crypto.map(r=>({...r}))]
+};
+let idxActiveTab='indices';
+let idxSearchAbort=null;
+let idxDebT=null;
+let idxDdFocus=-1;
+let _currentUser  = null;   // Firebase User object
+let _saveTimer    = null;   // debounce handle
+let _stateReady   = false;  // true once Firestore load complete
+
+const STORE_KEY = 'gmi_v8';
+
+// ═══════════════════════════════════════════════════
+//  AUTH — sign in / sign out / approval gate
+// ═══════════════════════════════════════════════════
+
+function showOverlay(){ el('auth-overlay').classList.remove('hidden'); }
+function hideOverlay(){ el('auth-overlay').classList.add('hidden'); }
+function showSigninPanel(){
+  el('auth-signin-panel').style.display='block';
+  el('auth-pending-panel').style.display='none';
+}
+function showPendingPanel(email){
+  el('auth-signin-panel').style.display='none';
+  el('auth-pending-panel').style.display='block';
+  if(email){
+    el('auth-pending-msg').innerHTML=
+      `Your request has been sent to the administrator.<br><br>`+
+      `You'll have access as soon as it's approved.<br>`+
+      `Please check back shortly.`;
+  }
+}
+function setAuthError(msg){
+  const e=el('auth-error');
+  e.textContent=msg; e.style.display=msg?'block':'none';
+}
+
+const GOOGLE_BTN_HTML=`<svg class="auth-google-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>Continue with Google`;
+
+async function signInWithGoogle(){
+  const btn=el('auth-google-btn');
+  btn.disabled=true;
+  btn.innerHTML=`<svg class="auth-google-icon" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/><path fill="none" d="M0 0h48v48H0z"/></svg>Signing in…`;
+  setAuthError('');
+  try{
+    // Use signInWithPopup via Firebase's own authDomain (global-market-intel-site.firebaseapp.com)
+    // This domain is pre-authorized by Firebase and works regardless of where the
+    // HTML file is hosted, bypassing GitHub Pages' storage/redirect restrictions.
+    await auth.setPersistence(firebase.auth.Auth.Persistence.SESSION);
+    const result = await auth.signInWithPopup(provider);
+    console.log('[GMI Auth] Popup sign-in successful:', result.user.email);
+    // onAuthStateChanged handles the rest
+  }catch(err){
+    console.error('[GMI Auth] signInWithPopup error:', err.code, err.message);
+    btn.disabled=false;
+    btn.innerHTML=GOOGLE_BTN_HTML;
+    const friendly={
+      'auth/popup-blocked':              'Pop-up was blocked by your browser. Please allow pop-ups for this site and try again.',
+      'auth/popup-closed-by-user':       '', // silent — user closed it themselves
+      'auth/too-many-requests':          'Too many sign-in attempts. Please try again later.',
+      'auth/quota-exceeded':             'Sign-ups are temporarily at capacity. Please contact the administrator.',
+      'auth/admin-restricted-operation': 'New sign-ups are temporarily paused. Please contact the administrator.',
+      'auth/unauthorized-domain':        'This domain is not authorised. Please access the dashboard from the correct URL.',
+      'auth/network-request-failed':     'Network error. Please check your connection and try again.',
+    };
+    const msg = friendly[err.code];
+    if(msg !== '') setAuthError(msg || 'Sign-in failed. Please try again.');
+  }
+}
+
+async function signOut(){
+  await auth.signOut();
+  _currentUser  = null;
+  _stateReady   = false;
+  showOverlay();
+  showSigninPanel();
+  el('user-badge').style.display='none';
+}
+
+// Called every time auth state changes (page load, sign-in, sign-out)
+auth.onAuthStateChanged(async user => {
+  
+  // ── Staging bypass — skips auth gate on staging repo URL ──
+  if (IS_STAGING) {
+    hideOverlay();
+    const fakeUser = { displayName: 'Dev User', photoURL: null, email: 'dev@staging.local', uid: 'staging-dev' };
+    await loadStateFromFirestore('staging-dev').catch(()=>{});
+    _stateReady = true;
+    initTheme('dark');
+    ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
+    if (activeTab) switchTab(activeTab);
+    initFX();
+    initIdxWidget();
+    initMarketStatus();
+    buildStockHeatmap('SPX500');
+    buildEtfHeatmap('AllCAEtf');
+    setLastRefreshed();
+    return; // ← exits before any real auth logic runs
+  }
+  
+  console.log('[GMI Auth] onAuthStateChanged fired. User:', user ? user.email : 'null');
+  if(!user){
+    showOverlay();
+    showSigninPanel();
+    const btn=el('auth-google-btn');
+    btn.disabled=false;
+    btn.innerHTML=GOOGLE_BTN_HTML;
+    return;
+  }
+
+  _currentUser = user;
+  console.log('[GMI Auth] User UID:', user.uid);
+
+  // Check / create user document in Firestore
+  console.log('[GMI Auth] Checking Firestore for user document…');
+  let snap;
+  try{
+    const userRef = db.collection('users').doc(user.uid);
+    snap = await userRef.get();
+    console.log('[GMI Auth] Firestore doc exists:', snap.exists);
+  }catch(err){
+    console.error('[GMI Auth] Firestore read error:', err.code, err.message);
+    setAuthError('Database error: ' + err.message);
+    return;
+  }
+
+  const userRef = db.collection('users').doc(user.uid);
+
+  if(!snap.exists){
+    console.log('[GMI Auth] New user — creating Firestore document…');
+    try{
+      await userRef.set({
+        uid:          user.uid,
+        email:        user.email,
+        displayName:  user.displayName || '',
+        photoURL:     user.photoURL    || '',
+        approved:     false,
+        createdAt:    firebase.firestore.FieldValue.serverTimestamp(),
+        lastSeen:     firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      console.log('[GMI Auth] Firestore document created successfully');
+    }catch(err){
+      console.error('[GMI Auth] Firestore write error:', err.code, err.message);
+      setAuthError('Could not save your account: ' + err.message);
+      return;
+    }
+    console.log('[GMI Auth] Sending access request email…');
+    await sendAccessRequestEmail(user);
+    showOverlay();
+    showPendingPanel(user.email);
+    // Start polling for approval — same as returning user branch
+    startApprovalPolling(user, userRef);
+    return;
+  }
+
+  const data = snap.data();
+  console.log('[GMI Auth] User approved status:', data.approved);
+
+  // Update lastSeen
+  userRef.update({ lastSeen: firebase.firestore.FieldValue.serverTimestamp() });
+
+  if(!data.approved){
+    showOverlay();
+    showPendingPanel(user.email);
+    startApprovalPolling(user, userRef);
+    return;
+  }
+
+  // User is approved — load their data and show dashboard
+  onUserApproved(user, data);
+});
+
+function startApprovalPolling(user, userRef){
+  console.log('[GMI Auth] Starting approval polling…');
+  const pollInterval = setInterval(async()=>{
+    try{
+      const fresh = await userRef.get();
+      console.log('[GMI Auth] Poll check — approved:', fresh.data()?.approved);
+      if(fresh.data()?.approved){
+        clearInterval(pollInterval);
+        onUserApproved(user, fresh.data());
+      }
+    }catch(e){
+      console.warn('[GMI Auth] Poll error:', e);
+    }
+  }, 5000); // check every 5 seconds
+}
+
+async function onUserApproved(user, data){
+  hideOverlay();
+  renderUserBadge(user);
+
+  // Load saved state from Firestore
+  await loadStateFromFirestore(user.uid);
+
+  _stateReady = true;
+
+  // Re-render everything with restored state
+  initTheme(data.theme || 'dark');
+  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
+  if(activeTab) switchTab(activeTab);
+  initFX();
+  initIdxWidget();
+  initMarketStatus();
+  buildStockHeatmap('SPX500');
+  buildEtfHeatmap('AllCAEtf');
+  setLastRefreshed();
+}
+
+function renderUserBadge(user){
+  const badge = el('user-badge');
+  const img   = el('user-avatar-img');
+  const fb    = el('user-avatar-fallback');
+  const name  = el('user-name-label');
+
+  const displayName = user.displayName || user.email || 'User';
+  const firstName   = displayName.split(' ')[0];
+  name.textContent  = firstName;
+
+  if(user.photoURL){
+    img.src          = user.photoURL;
+    img.style.display= 'block';
+    fb.style.display = 'none';
+  } else {
+    fb.textContent   = firstName.charAt(0).toUpperCase();
+    fb.style.display = 'flex';
+    img.style.display= 'none';
+  }
+  badge.style.display='flex';
+}
+
+async function sendAccessRequestEmail(user){
+  // Uses the EmailJS REST API directly — no SDK, no CDN, not blockable as a tracker
+  try{
+    const payload = {
+      service_id:  EJS_SERVICE,
+      template_id: EJS_TEMPLATE,
+      user_id:     EJS_KEY,
+      template_params: {
+        from_name:  user.displayName || 'Unknown User',
+        from_email: user.email       || 'No email provided',
+        user_id:    user.uid,
+        time:       new Date().toLocaleString(),
+      }
+    };
+    const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(payload)
+    });
+    if(res.ok){
+      console.log('Access request email sent successfully');
+    } else {
+      const text = await res.text();
+      console.error('EmailJS API error:', res.status, text);
+    }
+  } catch(e){
+    console.error('EmailJS fetch exception:', e);
+  }
+}
+
+// ═══════════════════════════════════════════════════
+//  FIRESTORE PERSISTENCE
+// ═══════════════════════════════════════════════════
+
+function collectState(){
+  return{
+    customSym,
+    activeFxPairs,
+    activeTab,
+    idxSymbols,
+    idxActiveTab,
+    theme: document.body.classList.contains('light-mode')?'light':'dark',
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+}
+
+// Debounced save — batches rapid changes into one write
+function save(){
+  if(!_stateReady || !_currentUser) return;
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(()=>_pushState(), 1500);
+}
+
+async function _pushState(){
+  if(!_currentUser) return;
+  try{
+    await db.collection('users').doc(_currentUser.uid)
+      .collection('state').doc('dashboard')
+      .set(collectState(), {merge:true});
+  }catch(e){ console.warn('Firestore save failed:', e); }
+}
+
+async function loadStateFromFirestore(uid){
+  try{
+    const snap = await db.collection('users').doc(uid)
+      .collection('state').doc('dashboard').get();
+    if(!snap.exists) return;
+    const s = snap.data();
+
+    // Restore symbols
+    if(s.customSym){
+      ['ca','us','au'].forEach(c=>{
+        customSym[c] = sanitiseSyms(s.customSym[c]||[]);
+      });
+    }
+    // Restore forex
+    if(s.activeFxPairs?.length) activeFxPairs = s.activeFxPairs;
+    if(!activeFxPairs.length)   activeFxPairs = [...FX_DEFAULTS];
+
+    // Restore active tab
+    if(s.activeTab && ['ca','us','au'].includes(s.activeTab)){
+      activeTab = s.activeTab;
+    }
+
+    // Restore indices
+    if(s.idxSymbols){
+      ['indices','crypto'].forEach(tab=>{
+        if(Array.isArray(s.idxSymbols[tab]) && s.idxSymbols[tab].length){
+          idxSymbols[tab] = s.idxSymbols[tab];
+        }
+      });
+    }
+    if(s.idxActiveTab && ['indices','crypto'].includes(s.idxActiveTab)){
+      idxActiveTab = s.idxActiveTab;
+    }
+
+    // Restore theme immediately
+    if(s.theme) applyTheme(s.theme !== 'light');
+
+  }catch(e){ console.warn('Firestore load failed:', e); }
+}
+
+// Kept for backward compat — no-op stubs
+function load(){ return null; }
+function cookieGet(){ return null; }
+function cookieSet(){}
+
+// ─── Sanitise helpers ─────────────────────────────
+function sanitiseSyms(arr){
+  if(!Array.isArray(arr)||arr.length===0) return [];
+  const out=arr.map((r,i)=>{
+    if(typeof r==='string') return{tv:r,visible:i===0};
+    return{tv:r.tv||r,visible:!!r.visible};
+  });
+  if(!out.some(r=>r.visible)) out[0].visible=true;
+  return out;
+}
+function el(id){ return document.getElementById(id); }
+
+// ═══════════════════════════════════════════════════
+//  LAST REFRESHED TIMESTAMP
+// ═══════════════════════════════════════════════════
+function setLastRefreshed(){
+  const now=new Date();
+  const ts=now.toLocaleDateString([],{month:'short',day:'numeric'})
+    +' '+now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  const span=el('header-refreshed');
+  if(span) span.textContent='Last refreshed: '+ts;
+}
+function setLive(){setLastRefreshed();}
+
+// ═══════════════════════════════════════════════════
+//  THEME TOGGLE — light / dark
+// ═══════════════════════════════════════════════════
+function applyTheme(isDark){
+  document.body.classList.toggle('light-mode',!isDark);
+  const icon=el('theme-icon'), label=el('theme-label');
+  if(icon) icon.textContent=isDark?'🌙':'☀️';
+  if(label) label.textContent=isDark?'Dark':'Light';
+}
+
+function toggleTheme(){
+  const isDark=document.body.classList.contains('light-mode');
+  applyTheme(isDark);
+  rebuildStockHeatmap();
+  rebuildEtfHeatmap();
+  buildIdxWidget();
+  save();
+}
+
+function initTheme(savedTheme){
+  const isDark = savedTheme ? savedTheme !== 'light' : true;
+  applyTheme(isDark);
+}
+
+// ═══════════════════════════════════════════════════
+//  INIT — auth-driven; dashboard boots inside onUserApproved()
+//  Register dropdown-close listener on DOMContentLoaded only
+// ═══════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  applyTheme(true); // dark by default to avoid flash before state loads
+  document.addEventListener('mousedown',e=>{
+    ['ca','us','au'].forEach(c=>{
+      const sb=el('sidebar-'+c);
+      if(sb&&!sb.contains(e.target)) closeDrop(c);
+    });
+    ['fx-drop1','fx-drop2'].forEach(id=>{
+      const d=el(id);
+      if(d){
+        const wrap=d.closest('.fx-cur-wrap');
+        if(wrap&&!wrap.contains(e.target)) d.classList.remove('open');
+      }
+    });
+  });
+});
+
+// ═══════════════════════════════════════════════════
+//  TAB SWITCHING
+// ═══════════════════════════════════════════════════
+let activeTab='ca';
+
+function switchTab(c){
+  activeTab=c;
+  ['ca','us','au'].forEach(t=>{
+    el('tab-'+t).classList.toggle('active',t===c);
+    el('pane-'+t).classList.toggle('active',t===c);
+  });
+  buildWidget(c);
+  renderMarketStatus(c);
+  save();
+}
+
+// ═══════════════════════════════════════════════════
+//  MARKET STATUS — open/closed with countdown
+//  All schedules in local exchange timezone (IANA).
+//  Shows the user's local time equivalent for open/close.
+// ═══════════════════════════════════════════════════
+
+// Market definitions: sessions in exchange local time
+const MARKET_CFG={
+  ca:{
+    label:'TSX (Toronto)',
+    tz:'America/Toronto',
+    // Regular hours Mon-Fri 09:30-16:00 ET
+    sessions:[{open:'09:30',close:'16:00',days:[1,2,3,4,5]}]
+  },
+  us:{
+    label:'NYSE/NASDAQ (New York)',
+    tz:'America/New_York',
+    sessions:[{open:'09:30',close:'16:00',days:[1,2,3,4,5]}]
+  },
+  au:{
+    label:'ASX (Sydney)',
+    tz:'Australia/Sydney',
+    sessions:[{open:'10:00',close:'16:00',days:[1,2,3,4,5]}]
+  }
+};
+
+// Parse "HH:MM" into minutes from midnight
+function hhmm(str){const[h,m]=str.split(':').map(Number);return h*60+m;}
+
+// Get current time in a given IANA timezone as {dayOfWeek(0=Sun..6=Sat), minutesFromMidnight}
+function tzNow(tz){
+  const now=new Date();
+  // Use Intl to get date parts in target tz
+  const parts=new Intl.DateTimeFormat('en-US',{
+    timeZone:tz,
+    hour:'numeric',minute:'numeric',second:'numeric',
+    weekday:'short',hour12:false
+  }).formatToParts(now);
+  const get=t=>parts.find(p=>p.type===t)?.value||'0';
+  const dayMap={Sun:0,Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6};
+  const dow=dayMap[get('weekday')]??0;
+  let hr=parseInt(get('hour'),10);
+  if(hr===24) hr=0;
+  const min=parseInt(get('minute'),10);
+  return{dow, mins:hr*60+min};
+}
+
+// Find current session status for a market config
+function getMarketStatus(cfg){
+  const{tz,sessions}=cfg;
+  const{dow,mins}=tzNow(tz);
+
+  // Check if currently in a session
+  for(const s of sessions){
+    if(s.days.includes(dow)){
+      const o=hhmm(s.open), c=hhmm(s.close);
+      if(mins>=o && mins<c){
+        // OPEN — time to close in this tz
+        const minsLeft=c-mins;
+        // Next open = next session (could be today after break, or next weekday)
+        const nextOpen=findNextOpen(cfg,tz,dow,c);
+        return{open:true, minsToEvent:minsLeft, eventLabel:'closes', nextOpen};
+      }
+    }
+  }
+  // CLOSED — find next open
+  const nextOpen=findNextOpen(cfg,tz,dow,mins);
+  return{open:false, minsToEvent:nextOpen.minsFromNow, eventLabel:'opens', nextOpen};
+}
+
+function findNextOpen(cfg,tz,currentDow,currentMins){
+  const{sessions}=cfg;
+  // Search up to 7 days ahead
+  for(let d=0;d<8;d++){
+    const checkDow=(currentDow+d)%7;
+    for(const s of sessions){
+      if(!s.days.includes(checkDow)) continue;
+      const o=hhmm(s.open);
+      const minsIntoDay=d===0?currentMins:0;
+      if(o>minsIntoDay||d>0){
+        // Calculate absolute minutes from now
+        const minsFromNow=(d===0?(o-currentMins):(1440*d - currentMins + o));
+        // Build local-time string for when it opens
+        const openDate=new Date(Date.now()+minsFromNow*60000);
+        const openLocal=openDate.toLocaleString([],{
+          weekday:'short',month:'short',day:'numeric',
+          hour:'2-digit',minute:'2-digit',timeZoneName:'short'
+        });
+        return{minsFromNow, openLocal, openDate};
+      }
+    }
+  }
+  return{minsFromNow:0,openLocal:'—',openDate:new Date()};
+}
+
+function fmtCountdown(mins){
+  if(mins<1) return'<1m';
+  const h=Math.floor(mins/60), m=mins%60;
+  if(h===0) return`${m}m`;
+  return`${h}h ${m}m`;
+}
+
+function renderMarketStatus(country){
+  const bar=el('status-'+country);
+  if(!bar) return;
+  const cfg=MARKET_CFG[country];
+  if(!cfg){bar.innerHTML='';return;}
+
+  try{
+    const{open,minsToEvent,eventLabel,nextOpen}=getMarketStatus(cfg);
+    const dot=open?'open':'closed';
+    const statusText=open?'OPEN':'CLOSED';
+
+    let detail='';
+    if(open){
+      detail=`Closes in <b>${fmtCountdown(minsToEvent)}</b> · Reopens <b>${nextOpen.openLocal}</b>`;
+    } else {
+      detail=`Opens in <b>${fmtCountdown(minsToEvent)}</b> · Next open <b>${nextOpen.openLocal}</b>`;
+    }
+
+    // Show user's local time for reference
+    const localNow=new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit',timeZoneName:'short'});
+
+    bar.innerHTML=`
+      <span class="mkt-status-dot ${dot}"></span>
+      <span class="mkt-status-label ${dot}">${statusText}</span>
+      <span class="mkt-status-sep"></span>
+      <span class="mkt-status-detail">${cfg.label} &nbsp;·&nbsp; ${detail}</span>
+      <span class="mkt-status-tz">Your time: ${localNow}</span>`;
+  }catch(e){
+    bar.innerHTML='<span class="mkt-status-detail" style="color:var(--text-dim)">Market hours unavailable</span>';
+  }
+}
+
+function initMarketStatus(){
+  ['ca','us','au'].forEach(renderMarketStatus);
+  // Refresh every 30 seconds
+  setInterval(()=>['ca','us','au'].forEach(renderMarketStatus),30000);
+}
+
+// ═══════════════════════════════════════════════════
+//  SYMBOL LIST  (checkbox = visible on chart)
+// ═══════════════════════════════════════════════════
+
+// Default symbol shown when user has added nothing yet
+const DEFAULT_SYM={ca:'TSX:XIU', us:'NASDAQ:QQQ', au:'ASX:XJO'};
+
+// Returns the single selected symbol (radio-style: only one at a time)
+function getVisibleSyms(c){
+  if(!customSym[c].length) return [DEFAULT_SYM[c]];
+  const selected=customSym[c].find(r=>r.visible);
+  return selected ? [selected.tv] : [customSym[c][0].tv];
+}
+
+function renderSymList(c){
+  const wrap=el('symlist-'+c);
+  if(!customSym[c].length){
+    wrap.innerHTML=`<div class="sym-empty">No symbols yet.<br>Type above to search &amp; add.</div>`;
+    return;
+  }
+  // Ensure exactly one is checked; if none, check first
+  const anyChecked=customSym[c].some(r=>r.visible);
+  if(!anyChecked && customSym[c].length) customSym[c][0].visible=true;
+
+  wrap.innerHTML=customSym[c].map((r,i)=>`
+    <div class="sym-row">
+      <label class="sym-cb">
+        <input type="radio" name="sym-radio-${c}" ${r.visible?'checked':''} onchange="selectSym('${c}',${i})"/>
+        <span class="sym-cb-box"></span>
+      </label>
+      <span class="sym-text${r.visible?'':' dimmed'}" title="${r.tv}">${r.tv}</span>
+      <button class="sym-del" onclick="delSym('${c}',${i})" title="Remove">×</button>
+    </div>`).join('');
+}
+
+// Radio-style: selecting one deselects all others
+function selectSym(c,i){
+  customSym[c].forEach((r,idx)=>{ r.visible=(idx===i); });
+  // Update dimming live without full re-render
+  const rows=el('symlist-'+c).querySelectorAll('.sym-row');
+  rows.forEach((row,idx)=>{
+    row.querySelector('.sym-text').classList.toggle('dimmed', idx!==i);
+  });
+  buildWidget(c);
+  save();
+}
+
+function delSym(c,i){
+  customSym[c].splice(i,1);
+  // If deleted was visible and others remain, mark first as visible
+  if(customSym[c].length && !customSym[c].some(r=>r.visible)){
+    customSym[c][0].visible=true;
+  }
+  renderSymList(c); buildWidget(c); save();
+}
+
+// ═══════════════════════════════════════════════════
+//  SYMBOL SEARCH
+//  Primary: TradingView public symbol search v3
+//  (works from browser, no API key, covers all exchanges globally)
+//  Local curated DB as instant fallback if network fails.
+// ═══════════════════════════════════════════════════
+
+// TV exchange lists per country — queried individually and merged
+const TV_EXCHS={
+  ca:['TSX','TSXV','CSE'],
+  us:['NYSE','NASDAQ','AMEX'],
+  au:['ASX']
+};
+
+// Exchange → badge CSS class
+const EXC_CLS={
+  TSX:'ex-tsx',TSXV:'ex-tsxv',CSE:'ex-cse',NEO:'ex-cse',
+  NYSE:'ex-nyse',NASDAQ:'ex-nasdaq',AMEX:'ex-amex',CBOE:'ex-amex',
+  ASX:'ex-asx'
+};
+
+// ── Local fallback DB (instant results while network loads) ──
+const LOCAL_DB=[
+  // CA
+  {s:'RY',n:'Royal Bank of Canada',ex:'TSX',tv:'TSX:RY'},
+  {s:'TD',n:'Toronto-Dominion Bank',ex:'TSX',tv:'TSX:TD'},
+  {s:'ENB',n:'Enbridge Inc',ex:'TSX',tv:'TSX:ENB'},
+  {s:'CNQ',n:'Canadian Natural Resources',ex:'TSX',tv:'TSX:CNQ'},
+  {s:'BNS',n:'Bank of Nova Scotia',ex:'TSX',tv:'TSX:BNS'},
+  {s:'BMO',n:'Bank of Montreal',ex:'TSX',tv:'TSX:BMO'},
+  {s:'SU',n:'Suncor Energy',ex:'TSX',tv:'TSX:SU'},
+  {s:'MFC',n:'Manulife Financial',ex:'TSX',tv:'TSX:MFC'},
+  {s:'ABX',n:'Barrick Gold Corp',ex:'TSX',tv:'TSX:ABX'},
+  {s:'BCE',n:'BCE Inc',ex:'TSX',tv:'TSX:BCE'},
+  {s:'T',n:'TELUS Corporation',ex:'TSX',tv:'TSX:T'},
+  {s:'CM',n:'CIBC',ex:'TSX',tv:'TSX:CM'},
+  {s:'WPM',n:'Wheaton Precious Metals',ex:'TSX',tv:'TSX:WPM'},
+  {s:'CNR',n:'Canadian National Railway',ex:'TSX',tv:'TSX:CNR'},
+  {s:'CP',n:'Canadian Pacific Kansas City',ex:'TSX',tv:'TSX:CP'},
+  {s:'SHOP',n:'Shopify Inc',ex:'TSX',tv:'TSX:SHOP'},
+  {s:'VFV',n:'Vanguard S&P 500 Index ETF',ex:'TSX',tv:'TSX:VFV'},
+  {s:'XIU',n:'iShares S&P/TSX 60 ETF',ex:'TSX',tv:'TSX:XIU'},
+  {s:'XIC',n:'iShares Core S&P/TSX ETF',ex:'TSX',tv:'TSX:XIC'},
+  {s:'ZAG',n:'BMO Aggregate Bond Index ETF',ex:'TSX',tv:'TSX:ZAG'},
+  {s:'XBB',n:'iShares Core Canadian Bond ETF',ex:'TSX',tv:'TSX:XBB'},
+  {s:'ACB',n:'Aurora Cannabis',ex:'TSXV',tv:'TSXV:ACB'},
+  {s:'HIVE',n:'HIVE Digital Technologies',ex:'TSXV',tv:'TSXV:HIVE'},
+  {s:'NXE',n:'NexGen Energy',ex:'TSXV',tv:'TSXV:NXE'},
+  {s:'CURA',n:'Curaleaf Holdings',ex:'CSE',tv:'CSE:CURA'},
+  {s:'GTII',n:'Green Thumb Industries',ex:'CSE',tv:'CSE:GTII'},
+  // US
+  {s:'AAPL',n:'Apple Inc',ex:'NASDAQ',tv:'NASDAQ:AAPL'},
+  {s:'MSFT',n:'Microsoft Corp',ex:'NASDAQ',tv:'NASDAQ:MSFT'},
+  {s:'NVDA',n:'NVIDIA Corporation',ex:'NASDAQ',tv:'NASDAQ:NVDA'},
+  {s:'GOOGL',n:'Alphabet Inc (Class A)',ex:'NASDAQ',tv:'NASDAQ:GOOGL'},
+  {s:'AMZN',n:'Amazon.com Inc',ex:'NASDAQ',tv:'NASDAQ:AMZN'},
+  {s:'META',n:'Meta Platforms',ex:'NASDAQ',tv:'NASDAQ:META'},
+  {s:'TSLA',n:'Tesla Inc',ex:'NASDAQ',tv:'NASDAQ:TSLA'},
+  {s:'AVGO',n:'Broadcom Inc',ex:'NASDAQ',tv:'NASDAQ:AVGO'},
+  {s:'NFLX',n:'Netflix Inc',ex:'NASDAQ',tv:'NASDAQ:NFLX'},
+  {s:'AMD',n:'Advanced Micro Devices',ex:'NASDAQ',tv:'NASDAQ:AMD'},
+  {s:'INTC',n:'Intel Corp',ex:'NASDAQ',tv:'NASDAQ:INTC'},
+  {s:'QCOM',n:'Qualcomm Inc',ex:'NASDAQ',tv:'NASDAQ:QCOM'},
+  {s:'PLTR',n:'Palantir Technologies',ex:'NASDAQ',tv:'NASDAQ:PLTR'},
+  {s:'COIN',n:'Coinbase Global',ex:'NASDAQ',tv:'NASDAQ:COIN'},
+  {s:'TEAM',n:'Atlassian Corporation',ex:'NASDAQ',tv:'NASDAQ:TEAM'},
+  {s:'QQQ',n:'Invesco QQQ Trust',ex:'NASDAQ',tv:'NASDAQ:QQQ'},
+  {s:'SPY',n:'SPDR S&P 500 ETF',ex:'AMEX',tv:'AMEX:SPY'},
+  {s:'IWM',n:'iShares Russell 2000 ETF',ex:'AMEX',tv:'AMEX:IWM'},
+  {s:'GLD',n:'SPDR Gold Shares',ex:'AMEX',tv:'AMEX:GLD'},
+  {s:'TLT',n:'iShares 20+ Year Treasury Bond ETF',ex:'NYSE',tv:'NYSE:TLT'},
+  {s:'AGG',n:'iShares Core US Aggregate Bond ETF',ex:'NYSE',tv:'NYSE:AGG'},
+  {s:'JPM',n:'JPMorgan Chase',ex:'NYSE',tv:'NYSE:JPM'},
+  {s:'BAC',n:'Bank of America',ex:'NYSE',tv:'NYSE:BAC'},
+  {s:'XOM',n:'ExxonMobil',ex:'NYSE',tv:'NYSE:XOM'},
+  {s:'JNJ',n:'Johnson & Johnson',ex:'NYSE',tv:'NYSE:JNJ'},
+  {s:'V',n:'Visa Inc',ex:'NYSE',tv:'NYSE:V'},
+  {s:'MA',n:'Mastercard',ex:'NYSE',tv:'NYSE:MA'},
+  {s:'WMT',n:'Walmart Inc',ex:'NYSE',tv:'NYSE:WMT'},
+  {s:'GS',n:'Goldman Sachs',ex:'NYSE',tv:'NYSE:GS'},
+  {s:'BRK.B',n:'Berkshire Hathaway B',ex:'NYSE',tv:'NYSE:BRK.B'},
+  // CA — additional symbols commonly missed by TV search
+  {s:'FTS',n:'Fortis Inc',ex:'TSX',tv:'TSX:FTS'},
+  {s:'SYZ',n:'Sylogist Ltd',ex:'TSX',tv:'TSX:SYZ'},
+  {s:'EMA',n:'Emera Inc',ex:'TSX',tv:'TSX:EMA'},
+  {s:'H',n:'Hydro One Ltd',ex:'TSX',tv:'TSX:H'},
+  {s:'NPI',n:'Northland Power Inc',ex:'TSX',tv:'TSX:NPI'},
+  {s:'AQN',n:'Algonquin Power & Utilities',ex:'TSX',tv:'TSX:AQN'},
+  {s:'BIP.UN',n:'Brookfield Infrastructure Partners',ex:'TSX',tv:'TSX:BIP.UN'},
+  {s:'BAM',n:'Brookfield Asset Management',ex:'TSX',tv:'TSX:BAM'},
+  {s:'BN',n:'Brookfield Corporation',ex:'TSX',tv:'TSX:BN'},
+  {s:'MG',n:'Magna International',ex:'TSX',tv:'TSX:MG'},
+  {s:'CAR.UN',n:'Canadian Apartment Properties REIT',ex:'TSX',tv:'TSX:CAR.UN'},
+  {s:'REI.UN',n:'RioCan REIT',ex:'TSX',tv:'TSX:REI.UN'},
+  {s:'SRU.UN',n:'SmartCentres REIT',ex:'TSX',tv:'TSX:SRU.UN'},
+  {s:'DIR.UN',n:'Dream Industrial REIT',ex:'TSX',tv:'TSX:DIR.UN'},
+  {s:'CRT.UN',n:'CT REIT',ex:'TSX',tv:'TSX:CRT.UN'},
+  {s:'GRT.UN',n:'Granite REIT',ex:'TSX',tv:'TSX:GRT.UN'},
+  {s:'AP.UN',n:'Allied Properties REIT',ex:'TSX',tv:'TSX:AP.UN'},
+  {s:'HR.UN',n:'H&R REIT',ex:'TSX',tv:'TSX:HR.UN'},
+  {s:'CHP.UN',n:'Choice Properties REIT',ex:'TSX',tv:'TSX:CHP.UN'},
+  // US — additional symbols commonly missed
+  {s:'QBTS',n:'D-Wave Quantum Inc',ex:'NYSE',tv:'NYSE:QBTS'},
+  {s:'IONQ',n:'IonQ Inc',ex:'NYSE',tv:'NYSE:IONQ'},
+  {s:'RGTI',n:'Rigetti Computing',ex:'NASDAQ',tv:'NASDAQ:RGTI'},
+  {s:'QUBT',n:'Quantum Computing Inc',ex:'NASDAQ',tv:'NASDAQ:QUBT'},
+  {s:'RKLB',n:'Rocket Lab USA',ex:'NASDAQ',tv:'NASDAQ:RKLB'},
+  {s:'LUNR',n:'Intuitive Machines',ex:'NASDAQ',tv:'NASDAQ:LUNR'},
+  {s:'ACHR',n:'Archer Aviation',ex:'NYSE',tv:'NYSE:ACHR'},
+  {s:'JOBY',n:'Joby Aviation',ex:'NYSE',tv:'NYSE:JOBY'},
+  {s:'SOFI',n:'SoFi Technologies',ex:'NASDAQ',tv:'NASDAQ:SOFI'},
+  {s:'AFRM',n:'Affirm Holdings',ex:'NASDAQ',tv:'NASDAQ:AFRM'},
+  {s:'UPST',n:'Upstart Holdings',ex:'NASDAQ',tv:'NASDAQ:UPST'},
+  {s:'PATH',n:'UiPath Inc',ex:'NYSE',tv:'NYSE:PATH'},
+  {s:'AI',n:'C3.ai Inc',ex:'NYSE',tv:'NYSE:AI'},
+  {s:'BBAI',n:'BigBear.ai Holdings',ex:'NYSE',tv:'NYSE:BBAI'},
+  {s:'SOUN',n:'SoundHound AI',ex:'NASDAQ',tv:'NASDAQ:SOUN'},
+  {s:'SMCI',n:'Super Micro Computer',ex:'NASDAQ',tv:'NASDAQ:SMCI'},
+  {s:'ARM',n:'Arm Holdings',ex:'NASDAQ',tv:'NASDAQ:ARM'},
+  {s:'ASML',n:'ASML Holding',ex:'NASDAQ',tv:'NASDAQ:ASML'},
+  {s:'TSM',n:'Taiwan Semiconductor',ex:'NYSE',tv:'NYSE:TSM'},
+  {s:'BABA',n:'Alibaba Group',ex:'NYSE',tv:'NYSE:BABA'},
+  {s:'NIO',n:'NIO Inc',ex:'NYSE',tv:'NYSE:NIO'},
+  {s:'XPEV',n:'XPeng Inc',ex:'NYSE',tv:'NYSE:XPEV'},
+  {s:'LI',n:'Li Auto Inc',ex:'NASDAQ',tv:'NASDAQ:LI'},
+  {s:'RIVN',n:'Rivian Automotive',ex:'NASDAQ',tv:'NASDAQ:RIVN'},
+  {s:'LCID',n:'Lucid Group',ex:'NASDAQ',tv:'NASDAQ:LCID'},
+  {s:'F',n:'Ford Motor Company',ex:'NYSE',tv:'NYSE:F'},
+  {s:'GM',n:'General Motors',ex:'NYSE',tv:'NYSE:GM'},
+  {s:'UBER',n:'Uber Technologies',ex:'NYSE',tv:'NYSE:UBER'},
+  {s:'LYFT',n:'Lyft Inc',ex:'NASDAQ',tv:'NASDAQ:LYFT'},
+  {s:'SNAP',n:'Snap Inc',ex:'NYSE',tv:'NYSE:SNAP'},
+  {s:'PINS',n:'Pinterest Inc',ex:'NYSE',tv:'NYSE:PINS'},
+  {s:'RDDT',n:'Reddit Inc',ex:'NYSE',tv:'NYSE:RDDT'},
+  {s:'HOOD',n:'Robinhood Markets',ex:'NASDAQ',tv:'NASDAQ:HOOD'},
+  // AU — more ASX symbols
+  {s:'WTC',n:'WiseTech Global',ex:'ASX',tv:'ASX:WTC'},
+  {s:'PME',n:'Pro Medicus',ex:'ASX',tv:'ASX:PME'},
+  {s:'ALU',n:'Altium Ltd',ex:'ASX',tv:'ASX:ALU'},
+  {s:'NXT',n:'NEXTDC Ltd',ex:'ASX',tv:'ASX:NXT'},
+  {s:'REA',n:'REA Group',ex:'ASX',tv:'ASX:REA'},
+  {s:'COL',n:'Coles Group',ex:'ASX',tv:'ASX:COL'},
+  {s:'ORG',n:'Origin Energy',ex:'ASX',tv:'ASX:ORG'},
+  {s:'WDS',n:'Woodside Energy',ex:'ASX',tv:'ASX:WDS'},
+  {s:'STO',n:'Santos Ltd',ex:'ASX',tv:'ASX:STO'},
+  {s:'S32',n:'South32 Ltd',ex:'ASX',tv:'ASX:S32'},
+  {s:'MIN',n:'Mineral Resources',ex:'ASX',tv:'ASX:MIN'},
+  {s:'LYC',n:'Lynas Rare Earths',ex:'ASX',tv:'ASX:LYC'},
+  {s:'ZIP',n:'Zip Co Ltd',ex:'ASX',tv:'ASX:ZIP'},
+  {s:'SUN',n:'Suncorp Group',ex:'ASX',tv:'ASX:SUN'},
+  {s:'QBE',n:'QBE Insurance Group',ex:'ASX',tv:'ASX:QBE'},
+  {s:'IAG',n:'Insurance Australia Group',ex:'ASX',tv:'ASX:IAG'},
+  {s:'GMG',n:'Goodman Group',ex:'ASX',tv:'ASX:GMG'},
+  {s:'SCG',n:'Scentre Group',ex:'ASX',tv:'ASX:SCG'},
+  {s:'TCL',n:'Transurban Group',ex:'ASX',tv:'ASX:TCL'},
+  {s:'AGL',n:'AGL Energy',ex:'ASX',tv:'ASX:AGL'},
+  {s:'NCM',n:'Newcrest Mining',ex:'ASX',tv:'ASX:NCM'},
+  {s:'NST',n:'Northern Star Resources',ex:'ASX',tv:'ASX:NST'},
+  {s:'EVN',n:'Evolution Mining',ex:'ASX',tv:'ASX:EVN'},
+  {s:'OZL',n:'OZ Minerals',ex:'ASX',tv:'ASX:OZL'},
+  {s:'IGO',n:'IGO Ltd',ex:'ASX',tv:'ASX:IGO'},
+  {s:'AKE',n:'Allkem Ltd',ex:'ASX',tv:'ASX:AKE'},
+  {s:'ZEB',n:'BMO Equal Weight Banks Index ETF',ex:'TSX',tv:'TSX:ZEB'},
+  {s:'ZCN',n:'BMO S&P/TSX Capped Composite Index ETF',ex:'TSX',tv:'TSX:ZCN'},
+  {s:'HXT',n:'Horizons S&P/TSX 60 Index ETF',ex:'TSX',tv:'TSX:HXT'},
+  {s:'XRE',n:'iShares S&P/TSX Capped REIT Index ETF',ex:'TSX',tv:'TSX:XRE'},
+  {s:'XFN',n:'iShares S&P/TSX Capped Financials ETF',ex:'TSX',tv:'TSX:XFN'},
+  {s:'XEG',n:'iShares S&P/TSX Capped Energy ETF',ex:'TSX',tv:'TSX:XEG'},
+  {s:'XGD',n:'iShares S&P/TSX Global Gold ETF',ex:'TSX',tv:'TSX:XGD'},
+  {s:'VSB',n:'Vanguard Canadian Short-Term Bond ETF',ex:'TSX',tv:'TSX:VSB'},
+  {s:'VCN',n:'Vanguard FTSE Canada All Cap ETF',ex:'TSX',tv:'TSX:VCN'},
+  {s:'XEQT',n:'iShares Core Equity ETF Portfolio',ex:'TSX',tv:'TSX:XEQT'},
+  {s:'XBAL',n:'iShares Core Balanced ETF Portfolio',ex:'TSX',tv:'TSX:XBAL'},
+  {s:'VGRO',n:'Vanguard Growth ETF Portfolio',ex:'TSX',tv:'TSX:VGRO'},
+  {s:'VBAL',n:'Vanguard Balanced ETF Portfolio',ex:'TSX',tv:'TSX:VBAL'},
+  {s:'VEQT',n:'Vanguard All-Equity ETF Portfolio',ex:'TSX',tv:'TSX:VEQT'},
+  {s:'HGRO',n:'Horizons Growth TRI ETF Portfolio',ex:'TSX',tv:'TSX:HGRO'},
+  {s:'ZSP',n:'BMO S&P 500 Index ETF',ex:'TSX',tv:'TSX:ZSP'},
+  {s:'ZUE',n:'BMO S&P 500 Hedged to CAD Index ETF',ex:'TSX',tv:'TSX:ZUE'},
+  {s:'ZQQ',n:'BMO NASDAQ 100 Equity Hedged to CAD Index ETF',ex:'TSX',tv:'TSX:ZQQ'},
+  {s:'QQC',n:'Invesco NASDAQ 100 Index ETF',ex:'TSX',tv:'TSX:QQC.F'},
+  // AU — more ASX ETFs including MNRS
+  {s:'MNRS',n:'VanEck Gold Miners ETF (ASX)',ex:'ASX',tv:'ASX:MNRS'},
+  {s:'GDX',n:'VanEck Gold Miners ETF (ASX)',ex:'ASX',tv:'ASX:GDX'},
+  {s:'HACK',n:'BetaShares Global Cybersecurity ETF',ex:'ASX',tv:'ASX:HACK'},
+  {s:'RBTZ',n:'BetaShares Global Robotics and AI ETF',ex:'ASX',tv:'ASX:RBTZ'},
+  {s:'ETHI',n:'BetaShares Global Sustainability Leaders ETF',ex:'ASX',tv:'ASX:ETHI'},
+  {s:'NDQ',n:'BetaShares NASDAQ 100 ETF',ex:'ASX',tv:'ASX:NDQ'},
+  {s:'A200',n:'BetaShares Australia 200 ETF',ex:'ASX',tv:'ASX:A200'},
+  {s:'QUAL',n:'VanEck MSCI International Quality ETF',ex:'ASX',tv:'ASX:QUAL'},
+  {s:'IHVV',n:'iShares S&P 500 AUD Hedged ETF',ex:'ASX',tv:'ASX:IHVV'},
+  {s:'VDHG',n:'Vanguard Diversified High Growth ETF',ex:'ASX',tv:'ASX:VDHG'},
+  {s:'VDBA',n:'Vanguard Diversified Balanced ETF',ex:'ASX',tv:'ASX:VDBA'},
+  {s:'VGS',n:'Vanguard MSCI Index International ETF',ex:'ASX',tv:'ASX:VGS'},
+  {s:'VAE',n:'Vanguard FTSE Asia ex Japan Shares ETF',ex:'ASX',tv:'ASX:VAE'},
+  {s:'VAF',n:'Vanguard Australian Fixed Interest ETF',ex:'ASX',tv:'ASX:VAF'},
+  {s:'GOLD',n:'ETFS Physical Gold',ex:'ASX',tv:'ASX:GOLD'},
+  {s:'CBA',n:'Commonwealth Bank',ex:'ASX',tv:'ASX:CBA'},
+  {s:'CSL',n:'CSL Limited',ex:'ASX',tv:'ASX:CSL'},
+  {s:'NAB',n:'National Australia Bank',ex:'ASX',tv:'ASX:NAB'},
+  {s:'WBC',n:'Westpac Banking Corp',ex:'ASX',tv:'ASX:WBC'},
+  {s:'ANZ',n:'ANZ Banking Group',ex:'ASX',tv:'ASX:ANZ'},
+  {s:'RIO',n:'Rio Tinto Ltd',ex:'ASX',tv:'ASX:RIO'},
+  {s:'MQG',n:'Macquarie Group',ex:'ASX',tv:'ASX:MQG'},
+  {s:'WES',n:'Wesfarmers Ltd',ex:'ASX',tv:'ASX:WES'},
+  {s:'FMG',n:'Fortescue Ltd',ex:'ASX',tv:'ASX:FMG'},
+  {s:'PLS',n:'Pilbara Minerals',ex:'ASX',tv:'ASX:PLS'},
+  {s:'XRO',n:'Xero Ltd',ex:'ASX',tv:'ASX:XRO'},
+  {s:'VAS',n:'Vanguard Australian Shares ETF',ex:'ASX',tv:'ASX:VAS'},
+  {s:'IOZ',n:'iShares Core S&P/ASX 200 ETF',ex:'ASX',tv:'ASX:IOZ'},
+  {s:'IAF',n:'iShares Core Composite Bond ETF',ex:'ASX',tv:'ASX:IAF'},
+  {s:'XJO',n:'S&P/ASX 200 Index',ex:'ASX',tv:'ASX:XJO'},
+  {s:'STW',n:'SPDR S&P/ASX 200 Fund',ex:'ASX',tv:'ASX:STW'},
+];
+
+// Country → which exchanges the local DB entry belongs to
+const LOCAL_COUNTRY_MAP={
+  TSX:'ca',TSXV:'ca',CSE:'ca',NEO:'ca',
+  NYSE:'us',NASDAQ:'us',AMEX:'us',
+  ASX:'au'
+};
+
+function localSearch(q,country){
+  const lq=q.toLowerCase();
+  return LOCAL_DB
+    .filter(r=>LOCAL_COUNTRY_MAP[r.ex]===country
+      &&(r.s.toLowerCase().includes(lq)||r.n.toLowerCase().includes(lq)))
+    .slice(0,10)
+    .map(r=>({sym:r.s,name:r.n,ex:r.ex,cls:EXC_CLS[r.ex]||'ex-nasdaq',tv:r.tv,type:''}));
+}
+
+// ═══════════════════════════════════════════════════
+//  SYMBOL SEARCH — 5-API CASCADE
+//
+//  APIs tried in order of daily free request capacity:
+//  1. TradingView symbol_search/v3  — unlimited, no key, browser-accessible
+//  2. Stooq autocomplete            — unlimited, no key, global coverage
+//  3. OpenFIGI /v3/search           — 250 req/min, no key, deep coverage
+//  4. Twelve Data /symbol_search    — 800 req/day free, no key needed
+//  5. Alpha Vantage SYMBOL_SEARCH   — 25 req/day free, no key needed
+//
+//  Each source returns [] on failure. Results are merged
+//  deduped by TV symbol string. Local DB always shown first
+//  as instant results before network responses arrive.
+// ═══════════════════════════════════════════════════
+
+// ── API 1: TradingView (unlimited, per-exchange) ──
+async function src_tradingview(query,country,signal){
+  const exchs=TV_EXCHS[country]||[];
+  const all=await Promise.all(exchs.map(async exch=>{
+    try{
+      const url='https://symbol-search.tradingview.com/symbol_search/v3/'
+        +'?text='+encodeURIComponent(query)
+        +'&exchange='+encodeURIComponent(exch)
+        +'&lang=en&search_type=undefined&domain=production';
+      const r=await fetch(url,{signal,mode:'cors'});
+      if(!r.ok) return [];
+      const raw=await r.json();
+      const arr=Array.isArray(raw)?raw:(raw.symbols||raw.list||[]);
+      return arr.filter(s=>s&&s.symbol).map(s=>({
+        sym:s.symbol, name:s.description||s.full_name||s.symbol,
+        ex:(s.exchange||s.prefix||'').toUpperCase(), type:s.type||''
+      }));
+    }catch(e){if(e.name==='AbortError')throw e; return [];}
+  }));
+  return all.flat();
+}
+
+// ── API 2: Stooq autocomplete (unlimited free, global) ──
+async function src_stooq(query,country,signal){
+  try{
+    // Stooq has a symbol search via their autocomplete endpoint
+    const url=`https://stooq.com/ac/?l=${encodeURIComponent(query)}&t=s&e=s`;
+    const r=await fetch(url,{signal,mode:'cors'});
+    if(!r.ok) return [];
+    const text=await r.text();
+    // Response is: symbol^name|symbol2^name2|...
+    const entries=text.trim().split('|').filter(Boolean);
+    const countryExchs=TV_EXCHS[country]||[];
+    const suffixMap={ca:['.CA','.TO','.V'],us:['','.US'],au:['.AU','.AX']};
+    const suffs=suffixMap[country]||[];
+    return entries.slice(0,15).flatMap(entry=>{
+      const [rawSym,rawName]=(entry+'^^').split('^');
+      if(!rawSym) return [];
+      const sym=rawSym.toUpperCase();
+      // Filter by suffix heuristic for country
+      const matches=country==='us'
+        ?!sym.includes('.')
+        :suffs.some(s=>sym.endsWith(s));
+      if(!matches) return [];
+      // Build TradingView symbol
+      let tvSym='';
+      if(country==='ca'){
+        if(sym.endsWith('.TO')) tvSym='TSX:'+sym.replace('.TO','');
+        else if(sym.endsWith('.V')) tvSym='TSXV:'+sym.replace('.V','');
+        else tvSym='TSX:'+sym.replace(/\.[A-Z]+$/,'');
+      } else if(country==='au'){
+        tvSym='ASX:'+sym.replace(/\.[A-Z]+$/,'');
+      } else {
+        tvSym='NASDAQ:'+sym; // default to NASDAQ for US
+      }
+      return [{sym:sym.replace(/\.[A-Z]+$/,''),name:rawName||sym,ex:'STOOQ',type:''}];
+    });
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
+// ── API 3: OpenFIGI /v3/search (250 req/min, no key, POST) ──
+async function src_openfigi(query,country,signal){
+  try{
+    const exchMap={ca:'TSX',us:'NYQ',au:'ASX'};// primary exchange filter
+    const body=JSON.stringify([{query,exchCode:exchMap[country]||''}]);
+    const r=await fetch('https://api.openfigi.com/v3/search',{
+      method:'POST',signal,mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body
+    });
+    if(!r.ok) return [];
+    const data=await r.json();
+    const items=(data[0]?.data)||[];
+    const exchs=TV_EXCHS[country]||[];
+    return items.slice(0,10).map(item=>{
+      const sym=item.ticker||item.bbgTicker||'';
+      const exRaw=(item.exchCode||'').toUpperCase();
+      // Map OpenFIGI exchCode to our TV prefix
+      let tvPfx='NYSE';
+      if(country==='ca') tvPfx='TSX';
+      else if(country==='au') tvPfx='ASX';
+      else if(exRaw.includes('NASDAQ')||exRaw==='UW'||exRaw==='UQ') tvPfx='NASDAQ';
+      else if(exRaw==='UA') tvPfx='AMEX';
+      return {sym,name:item.name||sym,ex:exRaw||tvPfx,type:item.securityType||''};
+    }).filter(r=>r.sym);
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
+// ── API 4: Twelve Data symbol_search (800/day free, no key) ──
+async function src_twelvedata(query,country,signal){
+  try{
+    const exchParam=country==='ca'?'TSX,TSXV':country==='au'?'ASX':'NYSE,NASDAQ,AMEX';
+    const url=`https://api.twelvedata.com/symbol_search?symbol=${encodeURIComponent(query)}&exchange=${encodeURIComponent(exchParam)}&outputsize=10`;
+    const r=await fetch(url,{signal,mode:'cors'});
+    if(!r.ok) return [];
+    const data=await r.json();
+    const hits=(data.data||data.result||[]);
+    return hits.slice(0,10).map(h=>({
+      sym:h.symbol||'', name:h.instrument_name||h.company_name||h.symbol,
+      ex:(h.exchange||'').toUpperCase(), type:h.instrument_type||''
+    })).filter(r=>r.sym);
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
+// ── API 5: Alpha Vantage SYMBOL_SEARCH (25/day free, no key) ──
+async function src_alphavantage(query,country,signal){
+  try{
+    const url=`https://www.alphavantage.co/query?function=SYMBOL_SEARCH&keywords=${encodeURIComponent(query)}&datatype=json`;
+    const r=await fetch(url,{signal,mode:'cors'});
+    if(!r.ok) return [];
+    const data=await r.json();
+    const matches=(data.bestMatches||[]);
+    const exchs=(TV_EXCHS[country]||[]).map(e=>e.toUpperCase());
+    return matches
+      .filter(m=>{
+        const reg=(m['4. region']||'').toLowerCase();
+        if(country==='ca') return reg.includes('canada')||reg.includes('toronto');
+        if(country==='au') return reg.includes('australia');
+        return reg.includes('united states');
+      })
+      .slice(0,8)
+      .map(m=>({
+        sym:m['1. symbol']||'', name:m['2. name']||'',
+        ex:country==='ca'?'TSX':country==='au'?'ASX':'NYSE',
+        type:m['3. type']||''
+      })).filter(r=>r.sym);
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
+// ── Merge all API results, deduplicate by TV symbol ──
+function buildTvSym(r,country){
+  if(r.tv) return r.tv;
+  const sym=r.sym.toUpperCase();
+  const ex=r.ex.toUpperCase();
+  if(country==='ca'){
+    if(ex==='TSXV'||ex==='TSXV') return 'TSXV:'+sym;
+    if(ex==='CSE'||ex==='NEO') return 'CSE:'+sym;
+    return 'TSX:'+sym;
+  }
+  if(country==='au') return 'ASX:'+sym;
+  // US
+  if(ex==='NASDAQ'||ex==='UW'||ex==='UQ'||ex==='NMS') return 'NASDAQ:'+sym;
+  if(ex==='AMEX'||ex==='UA'||ex==='PCX'||ex==='ASE') return 'AMEX:'+sym;
+  return 'NYSE:'+sym;
+}
+
+async function liveSearch(query,country,signal){
+  // Run all 5 sources in parallel; each handles its own errors
+  const [tv,stooq,figi,twelve,av]=await Promise.allSettled([
+    src_tradingview(query,country,signal),
+    src_stooq(query,country,signal),
+    src_openfigi(query,country,signal),
+    src_twelvedata(query,country,signal),
+    src_alphavantage(query,country,signal),
+  ]);
+  const seen=new Set();
+  const out=[];
+  // Collect in priority order
+  for(const settled of [tv,stooq,figi,twelve,av]){
+    if(settled.status!=='fulfilled') continue;
+    for(const r of settled.value){
+      if(!r.sym) continue;
+      const tvSym=buildTvSym(r,country);
+      if(seen.has(tvSym)) continue;
+      seen.add(tvSym);
+      out.push({
+        sym:r.sym, name:r.name||r.sym,
+        ex:r.ex, cls:EXC_CLS[r.ex]||'ex-nasdaq',
+        tv:tvSym, type:r.type||''
+      });
+      if(out.length>=15) break;
+    }
+    if(out.length>=15) break;
+  }
+  return out.slice(0,12);
+}
+
+const ddFocus={ca:-1,us:-1,au:-1};
+const debT={ca:null,us:null,au:null};
+let searchAbort={ca:null,us:null,au:null};
+
+function hl(txt,q){
+  if(!q) return txt;
+  const i=txt.toLowerCase().indexOf(q.toLowerCase());
+  if(i<0) return txt;
+  return txt.slice(0,i)+`<mark>${txt.slice(i,i+q.length)}</mark>`+txt.slice(i+q.length);
+}
+
+function renderDrop(c,res,q,loading){
+  const d=el('dropdown-'+c); ddFocus[c]=-1;
+  if(loading){
+    d.innerHTML='<div class="sd-empty">Searching…</div>';
+    d.classList.add('open'); return;
+  }
+  if(!res||!res.length){
+    d.innerHTML='<div class="sd-empty">No results found</div>';
+    d.classList.add('open'); return;
+  }
+  const added=new Set((customSym[c]||[]).map(r=>r.tv));
+  const items=res.filter(r=>!added.has(r.tv));
+  if(!items.length){
+    d.innerHTML='<div class="sd-empty">All results already added</div>';
+    d.classList.add('open'); return;
+  }
+  d.innerHTML=items.slice(0,12).map(r=>{
+    const typeTag=r.type&&r.type!=='EQUITY'&&r.type!=='Common Stock'
+      ?` <span style="font-size:9px;opacity:.45">${r.type}</span>`:'';
+    const safeTv=r.tv.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div class="sd-item" onmousedown="pickSym(event,'${c}','${safeTv}')">
+      <div class="sd-left">
+        <span class="sd-sym">${hl(r.sym,q)}</span>
+        <span class="sd-name">${hl(r.name,q)}${typeTag}</span>
+      </div>
+      <span class="sd-exbadge ${r.cls}">${r.ex}</span>
+    </div>`;
+  }).join('');
+  d.classList.add('open');
+}
+
+function closeDrop(c){const d=el('dropdown-'+c);if(d){d.classList.remove('open');ddFocus[c]=-1;}}
+
+function mergeResults(live,local){
+  // Put live results first, then append local results not already in live
+  const seen=new Set(live.map(r=>r.tv));
+  return [...live,...local.filter(r=>!seen.has(r.tv))].slice(0,12);
+}
+
+function onSI(c){
+  const inp=el('search-'+c), q=inp.value.trim();
+  if(!q){closeDrop(c);return;}
+  clearTimeout(debT[c]);
+
+  // Always show local DB results immediately
+  const local=localSearch(q,c);
+  renderDrop(c,local,q,false);
+
+  // Cancel any prior live search
+  if(searchAbort[c]){try{searchAbort[c].abort();}catch(_){}}
+  searchAbort[c]=new AbortController();
+
+  // After debounce, run the 5-API cascade and merge with local
+  debT[c]=setTimeout(async()=>{
+    try{
+      const live=await liveSearch(q,c,searchAbort[c].signal);
+      const merged=mergeResults(live,local);
+      renderDrop(c,merged,q,false);
+    }catch(e){
+      if(e.name==='AbortError') return;
+      // Any non-abort failure: local results already visible, nothing to do
+    }
+  },350);
+}
+function onSF(c){const i=el('search-'+c);if(i.value.trim())onSI(c);}
+function onSK(e,c){
+  const d=el('dropdown-'+c),items=d?d.querySelectorAll('.sd-item'):[];
+  if(e.key==='ArrowDown'){e.preventDefault();ddFocus[c]=Math.min(ddFocus[c]+1,items.length-1);updFocus(c,items);}
+  else if(e.key==='ArrowUp'){e.preventDefault();ddFocus[c]=Math.max(ddFocus[c]-1,0);updFocus(c,items);}
+  else if(e.key==='Enter'){e.preventDefault();const f=d&&d.querySelector('.sd-item.focused');if(f)f.dispatchEvent(new MouseEvent('mousedown'));}
+  else if(e.key==='Escape')closeDrop(c);
+}
+function updFocus(c,items){
+  items.forEach((x,i)=>x.classList.toggle('focused',i===ddFocus[c]));
+  const f=items[ddFocus[c]];if(f)f.scrollIntoView({block:'nearest'});
+}
+function pickSym(e,c,tv){
+  e.preventDefault();
+  if(!customSym[c].find(r=>r.tv===tv)){
+    const isFirst=customSym[c].length===0;
+    customSym[c].push({tv,visible:isFirst});
+    if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
+    renderSymList(c); buildWidget(c); save();
+  }
+  el('search-'+c).value='';
+  closeDrop(c);
+  el('search-'+c).focus();
+}
+
+// ═══════════════════════════════════════════════════
+//  TRADINGVIEW WIDGET — single symbol, iframe embed
+// ═══════════════════════════════════════════════════
+function buildWidget(c){
+  const frame=el('tv-'+c), loader=el('loading-'+c);
+
+  // Remove any existing iframes
+  Array.from(frame.querySelectorAll('iframe')).forEach(e=>e.remove());
+
+  const syms=getVisibleSyms(c);
+
+  // If no custom symbols added yet, show the instructions panel
+  if(!customSym[c].length){
+    loader.classList.remove('hidden');
+    // Restore instructions if they were replaced with a spinner
+    if(!loader.querySelector('.tv-instructions')){
+      loader.innerHTML=`<div class="tv-instructions">
+        <div class="tv-inst-icon">📈</div>
+        <div class="tv-inst-title">Search for a Symbol</div>
+        <div class="tv-inst-body">Use the search panel on the right to find any stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+      </div>`;
+    }
+    return;
+  }
+
+  // Show spinner while chart loads
+  loader.innerHTML='<div class="spinner"></div><p>LOADING MARKET DATA</p>';
+  loader.classList.remove('hidden');
+
+  const symbol=syms[0];
+
+  const src='https://s.tradingview.com/widgetembed/'
+    +'?symbol='+encodeURIComponent(symbol)
+    +'&interval=D'
+    +'&hidesidetoolbar=1'
+    +'&hide_top_toolbar=0'
+    +'&symboledit=1'
+    +'&saveimage=0'
+    +'&toolbarbg=0d1117'
+    +'&theme=dark'
+    +'&style=1'
+    +'&timezone=exchange'
+    +'&locale=en';
+
+  const iframe=document.createElement('iframe');
+  iframe.src=src;
+  iframe.style.cssText='width:100%;height:100%;border:none;position:absolute;inset:0;display:block';
+  iframe.setAttribute('allowtransparency','true');
+  iframe.setAttribute('frameborder','0');
+  iframe.setAttribute('scrolling','no');
+  iframe.addEventListener('load',()=>{loader.classList.add('hidden');setLive(true);});
+  setTimeout(()=>loader.classList.add('hidden'),8000);
+  frame.appendChild(iframe);
+}
+
+// ═══════════════════════════════════════════════════
+//  MAJOR INDICES WIDGET
+//  Market Overview widget with dynamic tab/symbol mgmt.
+//  State stored per-tab; widget rebuilt on any change.
+// ═══════════════════════════════════════════════════
+
+// (IDX_DEFAULTS, idxSymbols, idxActiveTab declared at top of script)
+
+function saveIdxState(){ save(); }
+
+function loadIdxState(){
+  // State is restored centrally in DOMContentLoaded via loadState()
+  // This is a no-op — kept for call-site compatibility
+}
+
+function switchIdxTab(tab){
+  idxActiveTab=tab;
+  ['indices','crypto'].forEach(t=>{
+    const btn=el('idx-listtab-'+t);
+    if(btn) btn.classList.toggle('active',t===tab);
+  });
+  renderIdxSymBar();
+  buildIdxWidget();
+  saveIdxState();
+}
+
+function renderIdxSymBar(){
+  const bar=el('idx-sym-bar');
+  if(!bar) return;
+  const syms=idxSymbols[idxActiveTab]||[];
+  if(!syms.length){bar.innerHTML='';return;}
+  bar.innerHTML=syms.map((item)=>{
+    const shortSym=item.s.includes(':')?item.s.split(':')[1]:item.s;
+    const safeS=item.s.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<span class="idx-pill">
+      <span class="idx-pill-sym" title="${item.d||item.s}">${shortSym}</span>
+      <button class="idx-pill-del" onclick="idxRemoveSymbol('${safeS}')" title="Remove ${item.s}">×</button>
+    </span>`;
+  }).join('');
+}
+
+// ── TV Symbol Search for Indices ──
+// Uses TradingView's public symbol_search API, same as the stock search
+// but without exchange filtering — allows indices, crypto, FX, etc.
+async function idxTvSearch(query, signal){
+  try{
+    const url='https://symbol-search.tradingview.com/symbol_search/v3/'
+      +'?text='+encodeURIComponent(query)
+      +'&lang=en&search_type=undefined&domain=production';
+    const r=await fetch(url,{signal,mode:'cors'});
+    if(!r.ok) return [];
+    const raw=await r.json();
+    const arr=Array.isArray(raw)?raw:(raw.symbols||raw.list||[]);
+    return arr.filter(s=>s&&s.symbol).slice(0,12).map(s=>({
+      sym: s.symbol,
+      name: s.description||s.full_name||s.symbol,
+      ex: (s.exchange||s.prefix||'').toUpperCase(),
+      type: s.type||'',
+      tv: (s.exchange||s.prefix||'').toUpperCase()+':'+s.symbol
+    }));
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
+function idxCloseDropdown(){
+  const d=el('idx-sym-dropdown');
+  if(d){d.classList.remove('open');d.innerHTML='';}
+  idxDdFocus=-1;
+}
+
+function idxRenderDropdown(results, q){
+  const d=el('idx-sym-dropdown');
+  if(!d) return;
+  idxDdFocus=-1;
+  if(!results||!results.length){
+    d.innerHTML='<div class="sd-empty">No results found</div>';
+    d.classList.add('open'); return;
+  }
+  const already=new Set([...idxSymbols.indices,...idxSymbols.crypto].map(r=>r.s));
+  const items=results.filter(r=>!already.has(r.tv));
+  if(!items.length){
+    d.innerHTML='<div class="sd-empty">Already added</div>';
+    d.classList.add('open'); return;
+  }
+  d.innerHTML=items.map(r=>{
+    const safeTv=r.tv.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeName=(r.name||'').replace(/"/g,'&quot;');
+    const hlSym=hl(r.sym,q), hlName=hl(r.name||'',q);
+    const typeTag=r.type&&r.type!=='EQUITY'&&r.type!=='Common Stock'
+      ?` <span style="font-size:9px;opacity:.45">${r.type}</span>`:'';
+    const exCls=EXC_CLS[r.ex]||'ex-nasdaq';
+    return `<div class="sd-item" onmousedown="idxPickSymbol(event,'${safeTv}','${safeName}')">
+      <div class="sd-left">
+        <span class="sd-sym">${hlSym}</span>
+        <span class="sd-name">${hlName}${typeTag}</span>
+      </div>
+      <span class="sd-exbadge ${exCls}">${r.ex||'—'}</span>
+    </div>`;
+  }).join('');
+  d.classList.add('open');
+}
+
+function idxOnInput(){
+  const inp=el('idx-search');
+  const q=(inp&&inp.value.trim())||'';
+  if(!q){idxCloseDropdown();return;}
+  clearTimeout(idxDebT);
+  if(idxSearchAbort){try{idxSearchAbort.abort();}catch(_){}}
+  idxSearchAbort=new AbortController();
+  // Show local instant results first
+  const localRes=localSearch(q,'us').concat(localSearch(q,'ca')).concat(localSearch(q,'au'));
+  idxRenderDropdown(localRes.slice(0,8),q);
+  // Then live TV search
+  idxDebT=setTimeout(async()=>{
+    try{
+      const live=await idxTvSearch(q,idxSearchAbort.signal);
+      const seen=new Set(localRes.map(r=>r.tv));
+      const merged=[...live,...localRes.filter(r=>!seen.has(r.tv))].slice(0,12);
+      idxRenderDropdown(merged,q);
+    }catch(e){if(e.name!=='AbortError') idxCloseDropdown();}
+  },300);
+}
+
+function idxOnFocus(){
+  const inp=el('idx-search');
+  if(inp&&inp.value.trim()) idxOnInput();
+}
+
+function idxPickSymbol(e, tv, name){
+  e.preventDefault();
+  const syms=idxSymbols[idxActiveTab];
+  if(!syms.find(r=>r.s===tv)){
+    syms.push({s:tv, d:name||tv.split(':')[1]||tv});
+    renderIdxSymBar();
+    buildIdxWidget();
+    saveIdxState();
+  }
+  const inp=el('idx-search');
+  if(inp) inp.value='';
+  idxCloseDropdown();
+}
+
+function idxAddFromInput(){
+  // If dropdown has a focused item, pick it; else treat raw input as symbol
+  const d=el('idx-sym-dropdown');
+  const focused=d&&d.querySelector('.sd-item.focused');
+  if(focused){focused.dispatchEvent(new MouseEvent('mousedown'));return;}
+  const inp=el('idx-search');
+  let raw=(inp&&inp.value.trim().toUpperCase())||'';
+  if(!raw) return;
+  if(!raw.includes(':')) raw='NASDAQ:'+raw;
+  idxPickSymbol({preventDefault:()=>{}}, raw, raw.split(':')[1]||raw);
+}
+
+function idxSearchKey(e){
+  const d=el('idx-sym-dropdown');
+  const items=d?d.querySelectorAll('.sd-item'):[];
+  if(e.key==='ArrowDown'){
+    e.preventDefault();
+    idxDdFocus=Math.min(idxDdFocus+1,items.length-1);
+    items.forEach((x,i)=>x.classList.toggle('focused',i===idxDdFocus));
+    if(items[idxDdFocus]) items[idxDdFocus].scrollIntoView({block:'nearest'});
+  } else if(e.key==='ArrowUp'){
+    e.preventDefault();
+    idxDdFocus=Math.max(idxDdFocus-1,0);
+    items.forEach((x,i)=>x.classList.toggle('focused',i===idxDdFocus));
+    if(items[idxDdFocus]) items[idxDdFocus].scrollIntoView({block:'nearest'});
+  } else if(e.key==='Enter'){
+    e.preventDefault();
+    idxAddFromInput();
+  } else if(e.key==='Escape'){
+    idxCloseDropdown();
+  }
+}
+
+function idxRemoveSymbol(sym){
+  const syms=idxSymbols[idxActiveTab];
+  const i=syms.findIndex(r=>r.s===sym);
+  if(i>=0) syms.splice(i,1);
+  renderIdxSymBar();
+  buildIdxWidget();
+  saveIdxState();
+}
+
+function buildIdxWidget(){
+  const wrap=el('idx-widget-wrap');
+  if(!wrap) return;
+  wrap.innerHTML='';
+
+  const tabs=[
+    {title:'Indices', symbols:idxSymbols.indices, originalTitle:'Indices'},
+    {title:'Crypto',  symbols:idxSymbols.crypto,  originalTitle:'Crypto'}
+  ];
+  // Active tab first so TV widget shows it on load
+  const orderedTabs=idxActiveTab==='crypto'?[tabs[1],tabs[0]]:[tabs[0],tabs[1]];
+
+  const container=document.createElement('div');
+  container.className='tradingview-widget-container';
+  container.style.cssText='width:100%';
+  const inner=document.createElement('div');
+  inner.className='tradingview-widget-container__widget';
+  container.appendChild(inner);
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src='https://s3.tradingview.com/external-embedding/embed-widget-market-overview.js';
+  script.async=true;
+  script.text=JSON.stringify({
+    colorTheme:getTheme(), dateRange:'1D', locale:'en', largeChartUrl:'',
+    isTransparent:true, showFloatingTooltip:false,
+    plotLineColorGrowing:'rgba(41,98,255,1)',
+    plotLineColorFalling:'rgba(41,98,255,1)',
+    gridLineColor:'rgba(240,243,250,0)', scaleFontColor:'#DBDBDB',
+    belowLineFillColorGrowing:'rgba(41,98,255,0.12)',
+    belowLineFillColorFalling:'rgba(41,98,255,0.12)',
+    belowLineFillColorGrowingBottom:'rgba(41,98,255,0)',
+    belowLineFillColorFallingBottom:'rgba(41,98,255,0)',
+    symbolActiveColor:'rgba(41,98,255,0.12)',
+    tabs:orderedTabs,
+    support_host:'https://www.tradingview.com',
+    backgroundColor: document.body.classList.contains('light-mode')?'#ffffff':'#0d1117',
+    width:'100%', height:'550',
+    showSymbolLogo:true, showChart:true
+  });
+  container.appendChild(script);
+  wrap.appendChild(container);
+}
+
+function initIdxWidget(){
+  loadIdxState();
+  ['indices','crypto'].forEach(t=>{
+    const btn=el('idx-listtab-'+t);
+    if(btn) btn.classList.toggle('active',t===idxActiveTab);
+  });
+  renderIdxSymBar();
+  buildIdxWidget();
+  // Close dropdown on outside click
+  document.addEventListener('mousedown',e=>{
+    const wrap=el('idx-search')&&el('idx-search').closest('.idx-search-wrap');
+    if(wrap&&!wrap.contains(e.target)) idxCloseDropdown();
+  });
+}
+
+
+//  Stock Heatmap and ETF Heatmap — TradingView script
+//  embeds. Rebuilds the widget container on data source
+//  change by removing the old script + div and injecting
+//  a fresh one, which forces TV to re-initialise.
+// ═══════════════════════════════════════════════════
+
+function buildHeatmap(wrapId, scriptSrc, config){
+  const wrap=el(wrapId);
+  if(!wrap) return;
+  // Wipe previous widget completely (TV scripts don't re-run if DOM persists)
+  wrap.innerHTML='';
+  const container=document.createElement('div');
+  container.className='tradingview-widget-container';
+  container.style.cssText='width:100%;height:100%';
+  const inner=document.createElement('div');
+  inner.className='tradingview-widget-container__widget';
+  inner.style.cssText='width:100%;height:100%';
+  container.appendChild(inner);
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src=scriptSrc;
+  script.async=true;
+  script.text=JSON.stringify(config);
+  container.appendChild(script);
+  wrap.appendChild(container);
+}
+
+function getTheme(){return document.body.classList.contains('light-mode')?'light':'dark';}
+
+function buildStockHeatmap(dataSource, grouping, blockSize){
+  buildHeatmap('stock-heatmap-wrap',
+    'https://s3.tradingview.com/external-embedding/embed-widget-stock-heatmap.js',
+    {
+      dataSource: dataSource||'SPX500',
+      blockSize: blockSize||'market_cap_basic',
+      blockColor: 'change',
+      grouping: grouping||'sector',
+      locale: 'en',
+      symbolUrl: '',
+      colorTheme: getTheme(),
+      exchanges: [],
+      hasTopBar: false,
+      isDataSetEnabled: false,
+      isZoomEnabled: true,
+      hasSymbolTooltip: true,
+      isMonoSize: false,
+      width: '100%',
+      height: '100%'
+    }
+  );
+}
+
+function rebuildStockHeatmap(){
+  const src=el('stock-heatmap-source');
+  const grp=el('stock-heatmap-grouping');
+  const bs=el('stock-heatmap-blocksize');
+  buildStockHeatmap(src?src.value:'SPX500', grp?grp.value:'sector', bs?bs.value:'market_cap_basic');
+}
+
+function buildEtfHeatmap(dataSource, grouping, blockSize){
+  buildHeatmap('etf-heatmap-wrap',
+    'https://s3.tradingview.com/external-embedding/embed-widget-etf-heatmap.js',
+    {
+      dataSource: dataSource||'AllCAEtf',
+      blockSize: blockSize||'Value.Traded',
+      blockColor: 'change',
+      grouping: grouping||'asset_class',
+      locale: 'en',
+      symbolUrl: '',
+      colorTheme: getTheme(),
+      hasTopBar: false,
+      isDataSetEnabled: false,
+      isZoomEnabled: true,
+      hasSymbolTooltip: true,
+      isMonoSize: false,
+      width: '100%',
+      height: '100%'
+    }
+  );
+}
+
+function rebuildEtfHeatmap(){
+  const src=el('etf-heatmap-source');
+  const grp=el('etf-heatmap-grouping');
+  const bs=el('etf-heatmap-blocksize');
+  buildEtfHeatmap(src?src.value:'AllCAEtf', grp?grp.value:'asset_class', bs?bs.value:'Value.Traded');
+}
+
+// ═══════════════════════════════════════════════════
+//  FOREX
+//
+//  PRICE  → TradingView "single-quote" embed widget (real-time)
+//  1W/1M/6M → Frankfurter.app (European Central Bank data, free)
+//
+//  Note: TradingView's widget renders live prices inside an iframe.
+//  Cross-origin restrictions prevent extracting numbers from it, so
+//  price is displayed as the TV widget and historical % from ECB.
+// ═══════════════════════════════════════════════════
+const FX_CAT=[
+  {id:'CADAUD', label:'CAD/AUD', flags:'🇨🇦🇦🇺', tv:'FX_IDC:CADAUD', ecb:{from:'CAD',to:'AUD'}},
+  {id:'CADUSD', label:'CAD/USD', flags:'🇨🇦🇺🇸', tv:'FX_IDC:CADUSD', ecb:{from:'CAD',to:'USD'}},
+  {id:'CADEUR', label:'CAD/EUR', flags:'🇨🇦🇪🇺', tv:'FX_IDC:CADEUR', ecb:{from:'CAD',to:'EUR'}},
+  {id:'CADGBP', label:'CAD/GBP', flags:'🇨🇦🇬🇧', tv:'FX_IDC:CADGBP', ecb:{from:'CAD',to:'GBP'}},
+  {id:'CADJPY', label:'CAD/JPY', flags:'🇨🇦🇯🇵', tv:'FX_IDC:CADJPY', ecb:{from:'CAD',to:'JPY'}},
+  {id:'USDCAD', label:'USD/CAD', flags:'🇺🇸🇨🇦', tv:'FX_IDC:USDCAD', ecb:{from:'USD',to:'CAD'}},
+  {id:'AUDCAD', label:'AUD/CAD', flags:'🇦🇺🇨🇦', tv:'FX_IDC:AUDCAD', ecb:{from:'AUD',to:'CAD'}},
+  {id:'AUDUSD', label:'AUD/USD', flags:'🇦🇺🇺🇸', tv:'FX_IDC:AUDUSD', ecb:{from:'AUD',to:'USD'}},
+  {id:'USDAUD', label:'USD/AUD', flags:'🇺🇸🇦🇺', tv:'FX_IDC:USDAUD', ecb:{from:'USD',to:'AUD'}},
+  {id:'AUDEUR', label:'AUD/EUR', flags:'🇦🇺🇪🇺', tv:'FX_IDC:AUDEUR', ecb:{from:'AUD',to:'EUR'}},
+  {id:'AUDJPY', label:'AUD/JPY', flags:'🇦🇺🇯🇵', tv:'FX_IDC:AUDJPY', ecb:{from:'AUD',to:'JPY'}},
+  {id:'EURUSD', label:'EUR/USD', flags:'🇪🇺🇺🇸', tv:'FX_IDC:EURUSD', ecb:{from:'EUR',to:'USD'}},
+  {id:'GBPUSD', label:'GBP/USD', flags:'🇬🇧🇺🇸', tv:'FX_IDC:GBPUSD', ecb:{from:'GBP',to:'USD'}},
+  {id:'USDJPY', label:'USD/JPY', flags:'🇺🇸🇯🇵', tv:'FX_IDC:USDJPY', ecb:{from:'USD',to:'JPY'}},
+  {id:'USDCHF', label:'USD/CHF', flags:'🇺🇸🇨🇭', tv:'FX_IDC:USDCHF', ecb:{from:'USD',to:'CHF'}},
+  {id:'NZDUSD', label:'NZD/USD', flags:'🇳🇿🇺🇸', tv:'FX_IDC:NZDUSD', ecb:{from:'NZD',to:'USD'}},
+  {id:'GBPCAD', label:'GBP/CAD', flags:'🇬🇧🇨🇦', tv:'FX_IDC:GBPCAD', ecb:{from:'GBP',to:'CAD'}},
+  {id:'GBPAUD', label:'GBP/AUD', flags:'🇬🇧🇦🇺', tv:'FX_IDC:GBPAUD', ecb:{from:'GBP',to:'AUD'}},
+  {id:'AUDNZD', label:'AUD/NZD', flags:'🇦🇺🇳🇿', tv:'FX_IDC:AUDNZD', ecb:{from:'AUD',to:'NZD'}},
+  {id:'CADNZD', label:'CAD/NZD', flags:'🇨🇦🇳🇿', tv:'FX_IDC:CADNZD', ecb:{from:'CAD',to:'NZD'}},
+  {id:'EURCAD', label:'EUR/CAD', flags:'🇪🇺🇨🇦', tv:'FX_IDC:EURCAD', ecb:{from:'EUR',to:'CAD'}},
+  {id:'EURAUD', label:'EUR/AUD', flags:'🇪🇺🇦🇺', tv:'FX_IDC:EURAUD', ecb:{from:'EUR',to:'AUD'}},
+  {id:'USDSGD', label:'USD/SGD', flags:'🇺🇸🇸🇬', tv:'FX_IDC:USDSGD', ecb:{from:'USD',to:'SGD'}},
+];
+
+const FX_ECB='https://api.frankfurter.app';
+let fxEcbCache={};
+
+function daysAgo(n){
+  const d=new Date();
+  // Go back far enough to ensure ECB has data (skip weekends)
+  d.setDate(d.getDate()-n);
+  return d.toISOString().slice(0,10);
+}
+
+function ecbCross(rates,from,to){
+  if(!rates) return null;
+  const f=from==='EUR'?1:rates[from];
+  const t=to==='EUR'?1:rates[to];
+  return(f&&t)?t/f:null;
+}
+
+async function fetchFxEcb(){
+  try{
+    // Fetch 4 snapshots: latest (today), 7 days ago, 30 days ago, 180 days ago
+    const [latest, snap7, snap30, snap180]=await Promise.all([
+      fetch(`${FX_ECB}/latest?from=EUR`).then(r=>r.json()),
+      fetch(`${FX_ECB}/${daysAgo(7)}?from=EUR`).then(r=>r.json()),
+      fetch(`${FX_ECB}/${daysAgo(30)}?from=EUR`).then(r=>r.json()),
+      fetch(`${FX_ECB}/${daysAgo(183)}?from=EUR`).then(r=>r.json()),  // ~6 months
+    ]);
+    if(!latest?.rates) return false;
+    const pct=(a,b)=>(a!==null&&b!==null&&b!==0)?((a-b)/b*100):null;
+    FX_CAT.forEach(p=>{
+      const {from,to}=p.ecb;
+      const prLatest =ecbCross(latest.rates, from,to);
+      const pr7      =ecbCross(snap7.rates,  from,to);
+      const pr30     =ecbCross(snap30.rates, from,to);
+      const pr180    =ecbCross(snap180.rates,from,to);
+      fxEcbCache[p.id]={
+        w1:  pct(prLatest, pr7),
+        m1:  pct(prLatest, pr30),
+        m6:  pct(prLatest, pr180),
+      };
+    });
+    return true;
+  }catch(e){console.warn('ECB fetch error',e);return false;}
+}
+
+function fmtC(v){
+  if(v===null||v===undefined) return{t:'—',c:'neu'};
+  return{t:(v>=0?'+':'')+v.toFixed(2)+'%', c:v>0?'pos':v<0?'neg':'neu'};
+}
+
+function renderFxTable(){
+  const tb=el('fx-tbody');
+  const pairs=activeFxPairs.map(id=>FX_CAT.find(p=>p.id===id)).filter(Boolean);
+  if(!pairs.length){
+    tb.innerHTML='<tr class="fx-msg"><td colspan="6">No pairs tracked. Click "+ Add Pair".</td></tr>';
+    return;
+  }
+
+  tb.innerHTML=pairs.map(p=>{
+    const d=fxEcbCache[p.id]||{};
+    const w1=fmtC(d.w1), m1=fmtC(d.m1), m6=fmtC(d.m6);
+
+    // TradingView single-quote widget at natural 80px height, scaled to 65%
+    const cfg=encodeURIComponent(JSON.stringify({
+      symbol: p.tv,
+      width: '100%',
+      height: 80,
+      locale: 'en',
+      colorTheme: 'dark',
+      isTransparent: true,
+      autosize: false,
+      largeChartUrl: ''
+    }));
+
+    return `<tr>
+      <td>
+        <div class="fx-pair-cell">
+          <span class="fx-flags">${p.flags}</span>
+          <span class="fx-pair-name">${p.label}</span>
+        </div>
+      </td>
+      <td class="fx-tv-cell">
+        <div class="fx-tv-wrap">
+          <iframe
+            src="https://s.tradingview.com/embed-widget/single-quote/?locale=en#${cfg}"
+            style="width:100%;height:80px;border:none;display:block;background:transparent"
+            frameborder="0" scrolling="no" allowtransparency="true" loading="lazy">
+          </iframe>
+        </div>
+      </td>
+      <td><span class="fx-chg ${w1.c}">${w1.t}</span></td>
+      <td><span class="fx-chg ${m1.c}">${m1.t}</span></td>
+      <td><span class="fx-chg ${m6.c}">${m6.t}</span></td>
+      <td><button class="fx-del" onclick="delFxPair('${p.id}')" title="Remove">×</button></td>
+    </tr>`;
+  }).join('');
+
+  const now=new Date();
+  el('fx-updated').textContent=`Updated ${now.toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'})} · Historical % via ECB/Frankfurter`;
+}
+
+async function initFX(){
+  el('fx-tbody').innerHTML='<tr class="fx-msg"><td colspan="6">Loading…</td></tr>';
+  await fetchFxEcb();
+  renderFxTable();
+}
+
+// ═══════════════════════════════════════════════════
+//  FOREX — CURRENCY PICKER (inline dual-field)
+// ═══════════════════════════════════════════════════
+
+// Comprehensive global currency list: {code, name, flag}
+const ALL_CURRENCIES=[
+  {c:'USD',n:'US Dollar',f:'🇺🇸'},
+  {c:'EUR',n:'Euro',f:'🇪🇺'},
+  {c:'GBP',n:'British Pound',f:'🇬🇧'},
+  {c:'JPY',n:'Japanese Yen',f:'🇯🇵'},
+  {c:'CAD',n:'Canadian Dollar',f:'🇨🇦'},
+  {c:'AUD',n:'Australian Dollar',f:'🇦🇺'},
+  {c:'NZD',n:'New Zealand Dollar',f:'🇳🇿'},
+  {c:'CHF',n:'Swiss Franc',f:'🇨🇭'},
+  {c:'CNY',n:'Chinese Yuan',f:'🇨🇳'},
+  {c:'CNH',n:'Chinese Yuan (Offshore)',f:'🇨🇳'},
+  {c:'HKD',n:'Hong Kong Dollar',f:'🇭🇰'},
+  {c:'SGD',n:'Singapore Dollar',f:'🇸🇬'},
+  {c:'SEK',n:'Swedish Krona',f:'🇸🇪'},
+  {c:'NOK',n:'Norwegian Krone',f:'🇳🇴'},
+  {c:'DKK',n:'Danish Krone',f:'🇩🇰'},
+  {c:'MXN',n:'Mexican Peso',f:'🇲🇽'},
+  {c:'BRL',n:'Brazilian Real',f:'🇧🇷'},
+  {c:'ZAR',n:'South African Rand',f:'🇿🇦'},
+  {c:'INR',n:'Indian Rupee',f:'🇮🇳'},
+  {c:'KRW',n:'South Korean Won',f:'🇰🇷'},
+  {c:'IDR',n:'Indonesian Rupiah',f:'🇮🇩'},
+  {c:'MYR',n:'Malaysian Ringgit',f:'🇲🇾'},
+  {c:'THB',n:'Thai Baht',f:'🇹🇭'},
+  {c:'PHP',n:'Philippine Peso',f:'🇵🇭'},
+  {c:'VND',n:'Vietnamese Dong',f:'🇻🇳'},
+  {c:'TWD',n:'Taiwan Dollar',f:'🇹🇼'},
+  {c:'ILS',n:'Israeli Shekel',f:'🇮🇱'},
+  {c:'TRY',n:'Turkish Lira',f:'🇹🇷'},
+  {c:'RUB',n:'Russian Ruble',f:'🇷🇺'},
+  {c:'PLN',n:'Polish Zloty',f:'🇵🇱'},
+  {c:'CZK',n:'Czech Koruna',f:'🇨🇿'},
+  {c:'HUF',n:'Hungarian Forint',f:'🇭🇺'},
+  {c:'RON',n:'Romanian Leu',f:'🇷🇴'},
+  {c:'HRK',n:'Croatian Kuna',f:'🇭🇷'},
+  {c:'BGN',n:'Bulgarian Lev',f:'🇧🇬'},
+  {c:'ISK',n:'Icelandic Krona',f:'🇮🇸'},
+  {c:'AED',n:'UAE Dirham',f:'🇦🇪'},
+  {c:'SAR',n:'Saudi Riyal',f:'🇸🇦'},
+  {c:'QAR',n:'Qatari Riyal',f:'🇶🇦'},
+  {c:'KWD',n:'Kuwaiti Dinar',f:'🇰🇼'},
+  {c:'BHD',n:'Bahraini Dinar',f:'🇧🇭'},
+  {c:'OMR',n:'Omani Rial',f:'🇴🇲'},
+  {c:'JOD',n:'Jordanian Dinar',f:'🇯🇴'},
+  {c:'EGP',n:'Egyptian Pound',f:'🇪🇬'},
+  {c:'NGN',n:'Nigerian Naira',f:'🇳🇬'},
+  {c:'KES',n:'Kenyan Shilling',f:'🇰🇪'},
+  {c:'GHS',n:'Ghanaian Cedi',f:'🇬🇭'},
+  {c:'PKR',n:'Pakistani Rupee',f:'🇵🇰'},
+  {c:'BDT',n:'Bangladeshi Taka',f:'🇧🇩'},
+  {c:'LKR',n:'Sri Lankan Rupee',f:'🇱🇰'},
+  {c:'NPR',n:'Nepalese Rupee',f:'🇳🇵'},
+  {c:'MMK',n:'Myanmar Kyat',f:'🇲🇲'},
+  {c:'KHR',n:'Cambodian Riel',f:'🇰🇭'},
+  {c:'PEN',n:'Peruvian Sol',f:'🇵🇪'},
+  {c:'CLP',n:'Chilean Peso',f:'🇨🇱'},
+  {c:'COP',n:'Colombian Peso',f:'🇨🇴'},
+  {c:'ARS',n:'Argentine Peso',f:'🇦🇷'},
+  {c:'UYU',n:'Uruguayan Peso',f:'🇺🇾'},
+  {c:'BOB',n:'Bolivian Boliviano',f:'🇧🇴'},
+  {c:'PYG',n:'Paraguayan Guarani',f:'🇵🇾'},
+  {c:'VES',n:'Venezuelan Bolívar',f:'🇻🇪'},
+  {c:'MAD',n:'Moroccan Dirham',f:'🇲🇦'},
+  {c:'TND',n:'Tunisian Dinar',f:'🇹🇳'},
+  {c:'DZD',n:'Algerian Dinar',f:'🇩🇿'},
+  {c:'UAH',n:'Ukrainian Hryvnia',f:'🇺🇦'},
+  {c:'GEL',n:'Georgian Lari',f:'🇬🇪'},
+  {c:'AMD',n:'Armenian Dram',f:'🇦🇲'},
+  {c:'AZN',n:'Azerbaijani Manat',f:'🇦🇿'},
+  {c:'KZT',n:'Kazakhstani Tenge',f:'🇰🇿'},
+  {c:'UZS',n:'Uzbekistani Som',f:'🇺🇿'},
+  {c:'XOF',n:'West African CFA Franc',f:'🌍'},
+  {c:'XAF',n:'Central African CFA Franc',f:'🌍'},
+  {c:'XPF',n:'CFP Franc',f:'🌊'},
+  {c:'MZN',n:'Mozambican Metical',f:'🇲🇿'},
+  {c:'TZS',n:'Tanzanian Shilling',f:'🇹🇿'},
+  {c:'ZMW',n:'Zambian Kwacha',f:'🇿🇲'},
+  {c:'BWP',n:'Botswana Pula',f:'🇧🇼'},
+];
+
+// Selected currencies state
+let curSel={cur1:null,cur2:null};
+let curFocusIdx={cur1:-1,cur2:-1};
+
+function getFlagPair(c1,c2){
+  const a=ALL_CURRENCIES.find(c=>c.c===c1),b=ALL_CURRENCIES.find(c=>c.c===c2);
+  return{flags:(a?.f||'')+(b?.f||''),label:`${c1}/${c2}`};
+}
+
+function filterCurDrop(dropId,q){
+  const inputId=dropId==='fx-drop1'?'fx-cur1':'fx-cur2';
+  const selKey=dropId==='fx-drop1'?'cur1':'cur2';
+  curSel[selKey]=null; // clear selection when typing
+  openCurDrop(dropId,q);
+}
+
+function openCurDrop(dropId,q){
+  const drop=el(dropId);
+  const lq=(q||'').toLowerCase().trim();
+  const filtered=lq
+    ?ALL_CURRENCIES.filter(c=>c.c.toLowerCase().includes(lq)||c.n.toLowerCase().includes(lq))
+    :ALL_CURRENCIES;
+  const focusKey=dropId==='fx-drop1'?'cur1':'cur2';
+  curFocusIdx[focusKey]=-1;
+  drop.innerHTML=filtered.slice(0,30).map((c,i)=>`
+    <div class="fx-cur-opt" onmousedown="selectCurrency('${dropId}','${c.c}','${c.n}','${c.f}')">
+      <span class="fx-cur-opt-code">${c.f} ${c.c}</span>
+      <span class="fx-cur-opt-name">${c.n}</span>
+    </div>`).join('');
+  if(filtered.length) drop.classList.add('open');
+  else drop.classList.remove('open');
+}
+
+function selectCurrency(dropId,code,name,flag){
+  const inputId=dropId==='fx-drop1'?'fx-cur1':'fx-cur2';
+  const selKey=dropId==='fx-drop1'?'cur1':'cur2';
+  el(inputId).value=`${flag} ${code}`;
+  curSel[selKey]=code;
+  el(dropId).classList.remove('open');
+}
+
+function curInputKey(e,dropId){
+  const drop=el(dropId);
+  const opts=drop.querySelectorAll('.fx-cur-opt');
+  const focusKey=dropId==='fx-drop1'?'cur1':'cur2';
+  if(e.key==='ArrowDown'){e.preventDefault();curFocusIdx[focusKey]=Math.min(curFocusIdx[focusKey]+1,opts.length-1);updCurFocus(drop,opts,focusKey);}
+  else if(e.key==='ArrowUp'){e.preventDefault();curFocusIdx[focusKey]=Math.max(curFocusIdx[focusKey]-1,0);updCurFocus(drop,opts,focusKey);}
+  else if(e.key==='Enter'){e.preventDefault();const f=drop.querySelector('.fx-cur-opt.focused');if(f)f.dispatchEvent(new MouseEvent('mousedown'));}
+  else if(e.key==='Escape'){drop.classList.remove('open');}
+}
+function updCurFocus(drop,opts,key){
+  opts.forEach((o,i)=>o.classList.toggle('focused',i===curFocusIdx[key]));
+  const f=opts[curFocusIdx[key]];if(f)f.scrollIntoView({block:'nearest'});
+}
+
+// Close currency dropdowns on outside click
+document.addEventListener('mousedown',e=>{
+  ['fx-drop1','fx-drop2'].forEach(id=>{
+    const d=el(id);
+    if(d&&!d.closest('.fx-cur-wrap').contains(e.target)) d.classList.remove('open');
+  });
+});
+
+function addCustomFxPair(){
+  const c1=curSel.cur1, c2=curSel.cur2;
+  if(!c1||!c2){
+    // highlight missing fields
+    if(!c1) el('fx-cur1').style.borderColor='var(--loss)';
+    if(!c2) el('fx-cur2').style.borderColor='var(--loss)';
+    setTimeout(()=>{el('fx-cur1').style.borderColor='';el('fx-cur2').style.borderColor='';},1500);
+    return;
+  }
+  if(c1===c2) return; // same currency, no-op
+
+  // Build pair id and TV symbol
+  const id=c1+c2;
+  const {flags,label}=getFlagPair(c1,c2);
+  const tvSym='FX_IDC:'+c1+c2;
+  const ecb={from:c1,to:c2};
+
+  // Add to FX_CAT if not already there
+  if(!FX_CAT.find(p=>p.id===id)){
+    FX_CAT.push({id,label,flags,tv:tvSym,ecb});
+  }
+
+  if(!activeFxPairs.includes(id)){
+    activeFxPairs.push(id);
+    save();
+    // Fetch ECB data for the new pair and re-render
+    fetchFxEcb().then(()=>renderFxTable());
+  }
+
+  // Reset inputs
+  el('fx-cur1').value=''; el('fx-cur2').value='';
+  curSel.cur1=null; curSel.cur2=null;
+}
+
+function delFxPair(id){activeFxPairs=activeFxPairs.filter(p=>p!==id);renderFxTable();save();}
+
+// Refresh ECB data every 5 minutes
+setInterval(async()=>{await fetchFxEcb();renderFxTable();},300000);
+</script>
+</body>
+</html>
