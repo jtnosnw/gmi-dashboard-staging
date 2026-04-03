@@ -194,10 +194,10 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .sd-empty{padding:10px;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);text-align:center;letter-spacing:.06em}
 
 /* symbol list */
-.sym-list-wrap{overflow-y:auto;padding:4px 6px 6px;max-height:408px}
-.sym-list-wrap::-webkit-scrollbar{width:5px}
+.sym-list-wrap{overflow-y:auto;padding:4px 6px 6px;scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
+.sym-list-wrap::-webkit-scrollbar{width:4px}
 .sym-list-wrap::-webkit-scrollbar-track{background:var(--bg-base)}
-.sym-list-wrap::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:3px}
+.sym-list-wrap::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
 .sym-list-wrap::-webkit-scrollbar-thumb:hover{background:var(--accent-us)}
 .sym-row{display:flex;align-items:center;gap:6px;padding:6px 4px;border-radius:6px;transition:background .12s}
 .sym-row:hover{background:rgba(255,255,255,.04)}
@@ -1643,11 +1643,19 @@ function getVisibleSyms(c){
 function renderSymList(c){
   const wrap=el('symlist-'+c);
   if(!customSym[c].length){
+    wrap.style.maxHeight='';
     wrap.innerHTML=`<div class="sym-empty">No symbols yet.<br>Type above to search &amp; add.</div>`;
     return;
   }
   // Ensure exactly one is selected
   if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
+
+  // Cap height at 10 rows (~34px each + 4px top/bottom padding = 348px)
+  // Below 10 symbols: no max-height so the list grows naturally
+  const ROW_H=34, MAX_ROWS=10, PAD=8;
+  wrap.style.maxHeight = customSym[c].length >= MAX_ROWS
+    ? (MAX_ROWS * ROW_H + PAD)+'px'
+    : '';
 
   wrap.innerHTML=customSym[c].map((r,i)=>`
     <div class="sym-row">
