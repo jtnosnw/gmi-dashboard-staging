@@ -306,8 +306,8 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
   background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.25);color:var(--accent-fx);
   border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto}
 .fx-add-btn:hover{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.45)}
-/* fx-table-wrap: max 7 pairs visible (thead ~30px + 7 rows × 52px) before scroll */
-.fx-table-wrap{overflow-y:auto;max-height:394px;
+/* fx-table-wrap: flex:1 fills card; overflow-y:auto scrolls when content exceeds 7 rows (~394px) */
+.fx-table-wrap{flex:1;overflow-y:auto;min-height:0;
   scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
 .fx-table-wrap::-webkit-scrollbar{width:4px}
 .fx-table-wrap::-webkit-scrollbar-track{background:var(--bg-base)}
@@ -1309,7 +1309,11 @@ function syncFxCardHeight(){
   const idxCard=document.querySelector('.idx-card');
   const fxCard =document.querySelector('.fx-card');
   if(!idxCard||!fxCard) return;
-  const setH=()=>{ fxCard.style.maxHeight=idxCard.offsetHeight+'px'; };
+  const setH=()=>{
+    const h=idxCard.offsetHeight+'px';
+    fxCard.style.minHeight=h;
+    fxCard.style.maxHeight=h;
+  };
   setH();
   if(window.ResizeObserver){
     new ResizeObserver(setH).observe(idxCard);
