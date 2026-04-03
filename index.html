@@ -212,10 +212,8 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 }
 
 /* BOTTOM SECTION: indices (2/3) + forex (1/3) */
-.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}
-.bottom-grid>.idx-card,.bottom-grid>.fx-card{height:100%;box-sizing:border-box}
-@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}
-  .bottom-grid>.idx-card,.bottom-grid>.fx-card{height:auto}}
+.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
 
 /* INDICES CARD */
 .idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:clip;display:flex;flex-direction:column;min-height:0}
@@ -278,6 +276,7 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 
 /* FOREX TABLE */
 .fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:clip;display:flex;flex-direction:column;min-height:0}
+/* fx-card max-height is synced to idx-card height by JS (syncFxCardHeight) */
 .fx-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap}
 .fx-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Inline add-pair row */
@@ -963,6 +962,7 @@ function onStagingBypass(){
   buildStockHeatmap('SPX500');
   buildEtfHeatmap('AllCAEtf');
   setLastRefreshed();
+  syncFxCardHeight();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1142,6 +1142,7 @@ async function onUserApproved(user, data){
   buildStockHeatmap('SPX500');
   buildEtfHeatmap('AllCAEtf');
   setLastRefreshed();
+  syncFxCardHeight();
 }
 
 function renderUserBadge(user){
@@ -1296,6 +1297,26 @@ function setLastRefreshed(){
   if(span) span.textContent='Last refreshed: '+ts;
 }
 function setLive(){setLastRefreshed();}
+
+// ═══════════════════════════════════════════════════
+//  SYNC FX CARD HEIGHT TO INDICES CARD
+//  Observes the idx-card height and applies it as
+//  max-height on fx-card so the forex card never
+//  exceeds the indices card height, but shrinks
+//  naturally when fewer pairs are shown.
+// ═══════════════════════════════════════════════════
+function syncFxCardHeight(){
+  const idxCard=document.querySelector('.idx-card');
+  const fxCard =document.querySelector('.fx-card');
+  if(!idxCard||!fxCard) return;
+  const setH=()=>{ fxCard.style.maxHeight=idxCard.offsetHeight+'px'; };
+  setH();
+  if(window.ResizeObserver){
+    new ResizeObserver(setH).observe(idxCard);
+  } else {
+    window.addEventListener('resize',setH);
+  }
+}
 
 // ═══════════════════════════════════════════════════
 //  THEME TOGGLE — light / dark
