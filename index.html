@@ -105,6 +105,10 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .mkt-tab[id="tab-us"].active .mkt-tab-label{color:var(--accent-us)}
 .mkt-tab[id="tab-au"].active{border-bottom-color:var(--accent-au)}
 .mkt-tab[id="tab-au"].active .mkt-tab-label{color:var(--accent-au)}
+/* AIO Advanced Chart tab — pushed to the right */
+.mkt-tab-spacer{flex:1}
+.mkt-tab[id="tab-aio"].active{border-bottom-color:var(--accent-fx)}
+.mkt-tab[id="tab-aio"].active .mkt-tab-label{color:var(--accent-fx)}
 
 /* Tab panes */
 .mkt-pane{display:none}
@@ -578,6 +582,11 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
       <span class="mkt-tab-label">Australia</span>
       <span class="mkt-tab-sub">ASX</span>
     </button>
+    <span class="mkt-tab-spacer"></span>
+    <button class="mkt-tab" id="tab-aio" onclick="switchTab('aio')">
+      <span class="mkt-tab-label">AIO Advanced Chart</span>
+      <span class="mkt-tab-sub">All Exchanges</span>
+    </button>
   </div>
 
   <!-- Tab pane: Canada -->
@@ -678,6 +687,39 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
         </div>
         <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
         <div class="sym-list-wrap" id="symlist-au"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab pane: AIO Advanced Chart -->
+  <div class="mkt-pane" id="pane-aio">
+    <div class="card-inner">
+      <div class="chart-area">
+        <div class="tv-frame" id="tv-aio" style="min-height:500px">
+          <div class="tv-loading" id="loading-aio">
+            <div class="tv-instructions">
+              <div class="tv-inst-icon">📊</div>
+              <div class="tv-inst-title">AIO Advanced Chart</div>
+              <div class="tv-inst-body">Full-featured TradingView Advanced Chart.<br><br>Add symbols to the Watchlist using the search panel on the right. Select a symbol to display it as the main chart.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card-sidebar" id="sidebar-aio" style="width:220px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-card)">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Search &amp; Add Symbol</div>
+          <div class="search-wrap">
+            <input class="sym-search" id="search-aio" placeholder="Ticker or company name…" autocomplete="off"
+              oninput="onSI('aio')" onkeydown="onSK(event,'aio')" onfocus="onSF('aio')"/>
+            <div class="sym-dropdown" id="dropdown-aio"></div>
+          </div>
+        </div>
+        <div class="cur-selector-wrap">
+          <div class="cur-selector-label">Currency</div>
+          <div class="cur-selector" id="cur-aio"></div>
+        </div>
+        <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Watchlist</div>
+        <div class="sym-list-wrap" id="symlist-aio"></div>
       </div>
     </div>
   </div>
@@ -926,7 +968,7 @@ const EJS_KEY      = 'KAW98Xpmmzpe6H1wQ';
 // ═══════════════════════════════════════════════════
 //  RUNTIME STATE
 // ═══════════════════════════════════════════════════
-let customSym   = {ca:[],us:[],au:[]};
+let customSym   = {ca:[],us:[],au:[],aio:[]};
 let activeFxPairs = [];
 const FX_DEFAULTS = ['CADAUD','CADUSD','CADEUR','CADGBP','CADJPY'];
 
@@ -979,7 +1021,7 @@ function onStagingBypass(){
   // Boot everything with dark theme default
   initTheme('dark');
   initCurrencySelectors();
-  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
+  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); }); renderSymList('aio'); buildAioWidget();
   if(activeTab) switchTab(activeTab);
   initFX();
   initIdxWidget();
@@ -1160,7 +1202,7 @@ async function onUserApproved(user, data){
   // Re-render everything with restored state
   initTheme(data.theme || 'dark');
   initCurrencySelectors();
-  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
+  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); }); renderSymList('aio'); buildAioWidget();
   if(activeTab) switchTab(activeTab);
   initFX();
   initIdxWidget();
@@ -1265,7 +1307,7 @@ async function loadStateFromFirestore(uid){
 
     // Restore symbols
     if(s.customSym){
-      ['ca','us','au'].forEach(c=>{
+      ['ca','us','au','aio'].forEach(c=>{
         customSym[c] = sanitiseSyms(s.customSym[c]||[]);
       });
     }
@@ -1274,7 +1316,7 @@ async function loadStateFromFirestore(uid){
     if(!activeFxPairs.length)   activeFxPairs = [...FX_DEFAULTS];
 
     // Restore active tab
-    if(s.activeTab && ['ca','us','au'].includes(s.activeTab)){
+    if(s.activeTab && ['ca','us','au','aio'].includes(s.activeTab)){
       activeTab = s.activeTab;
     }
 
@@ -1292,7 +1334,7 @@ async function loadStateFromFirestore(uid){
 
     // Restore currency selections
     if(s.activeCurrency){
-      ['ca','us','au'].forEach(c=>{
+      ['ca','us','au','aio'].forEach(c=>{
         if(s.activeCurrency[c]) activeCurrency[c]=s.activeCurrency[c];
       });
     }
@@ -1370,6 +1412,7 @@ function toggleTheme(){
   const isDark=document.body.classList.contains('light-mode');
   applyTheme(isDark);
   ['ca','us','au'].forEach(c=>buildWidget(c));
+  buildAioWidget();
   rebuildStockHeatmap();
   rebuildEtfHeatmap();
   buildIdxWidget();
@@ -1390,7 +1433,7 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   // Register global dropdown-close listener
   document.addEventListener('mousedown',e=>{
-    ['ca','us','au'].forEach(c=>{
+    ['ca','us','au','aio'].forEach(c=>{
       const sb=el('sidebar-'+c);
       if(sb&&!sb.contains(e.target)) closeDrop(c);
     });
@@ -1412,14 +1455,21 @@ document.addEventListener('DOMContentLoaded', ()=>{
 // ═══════════════════════════════════════════════════
 let activeTab='ca';
 
+const ALL_TABS=['ca','us','au','aio'];
+
 function switchTab(c){
   activeTab=c;
-  ['ca','us','au'].forEach(t=>{
-    el('tab-'+t).classList.toggle('active',t===c);
-    el('pane-'+t).classList.toggle('active',t===c);
+  ALL_TABS.forEach(t=>{
+    const tab=el('tab-'+t), pane=el('pane-'+t);
+    if(tab) tab.classList.toggle('active',t===c);
+    if(pane) pane.classList.toggle('active',t===c);
   });
-  buildWidget(c);
-  renderMarketStatus(c);
+  if(c==='aio'){
+    buildAioWidget();
+  } else {
+    buildWidget(c);
+    renderMarketStatus(c);
+  }
   save();
 }
 
@@ -1568,18 +1618,19 @@ function initMarketStatus(){
 // ═══════════════════════════════════════════════════
 
 // Default symbol shown when user has added nothing yet
-const DEFAULT_SYM={ca:'TSX:VFV', us:'NASDAQ:NVDA', au:'ASX:GDX'};
+const DEFAULT_SYM={ca:'TSX:VFV', us:'NASDAQ:NVDA', au:'ASX:GDX', aio:'NASDAQ:NVDA'};
 const DEFAULT_RANGE='5D';
 
 // Per-country active currency for Symbol Overview widget
-const DEFAULT_CURRENCY={ca:'CAD', us:'USD', au:'AUD'};
-let activeCurrency={ca:'CAD', us:'USD', au:'AUD'};
+const DEFAULT_CURRENCY={ca:'CAD', us:'USD', au:'AUD', aio:'USD'};
+let activeCurrency={ca:'CAD', us:'USD', au:'AUD', aio:'USD'};
 
 // Currency options available per country tab
 const CURRENCY_OPTIONS={
   ca:['CAD','USD','AUD','EUR','GBP','JPY'],
   us:['USD','CAD','AUD','EUR','GBP','JPY'],
   au:['AUD','USD','CAD','EUR','GBP','JPY'],
+  aio:['USD','CAD','AUD','EUR','GBP','JPY'],
 };
 
 // Returns the single selected (radio) symbol for the Symbol Overview widget
@@ -1616,7 +1667,7 @@ function selectSym(c,i){
   rows.forEach((row,idx)=>{
     row.querySelector('.sym-text').classList.toggle('dimmed', idx!==i);
   });
-  buildWidget(c);
+  if(c==='aio') buildAioWidget(); else buildWidget(c);
   save();
 }
 
@@ -1626,7 +1677,9 @@ function delSym(c,i){
   if(customSym[c].length && !customSym[c].some(r=>r.visible)){
     customSym[c][0].visible=true;
   }
-  renderSymList(c); buildWidget(c); save();
+  renderSymList(c);
+  if(c==='aio') buildAioWidget(); else buildWidget(c);
+  save();
 }
 
 // ═══════════════════════════════════════════════════
@@ -1640,7 +1693,8 @@ function delSym(c,i){
 const TV_EXCHS={
   ca:['TSX','TSXV','CSE'],
   us:['NYSE','NASDAQ','AMEX'],
-  au:['ASX']
+  au:['ASX'],
+  aio:[] // AIO searches all exchanges globally (no filter)
 };
 
 // Exchange → badge CSS class
@@ -2052,9 +2106,9 @@ async function liveSearch(query,country,signal){
   return out.slice(0,12);
 }
 
-const ddFocus={ca:-1,us:-1,au:-1};
-const debT={ca:null,us:null,au:null};
-let searchAbort={ca:null,us:null,au:null};
+const ddFocus={ca:-1,us:-1,au:-1,aio:-1};
+const debT={ca:null,us:null,au:null,aio:null};
+let searchAbort={ca:null,us:null,au:null,aio:null};
 
 function hl(txt,q){
   if(!q) return txt;
@@ -2102,13 +2156,37 @@ function mergeResults(live,local){
   return [...live,...local.filter(r=>!seen.has(r.tv))].slice(0,12);
 }
 
+// ── AIO Global search: TV symbol_search with no exchange filter ──
+async function aioLiveSearch(query,signal){
+  try{
+    const url='https://symbol-search.tradingview.com/symbol_search/v3/'
+      +'?text='+encodeURIComponent(query)
+      +'&lang=en&search_type=undefined&domain=production';
+    const r=await fetch(url,{signal,mode:'cors'});
+    if(!r.ok) return [];
+    const raw=await r.json();
+    const arr=Array.isArray(raw)?raw:(raw.symbols||raw.list||[]);
+    return arr.filter(s=>s&&s.symbol).slice(0,12).map(s=>{
+      const ex=(s.exchange||s.prefix||'').toUpperCase();
+      return{
+        sym:s.symbol, name:s.description||s.full_name||s.symbol,
+        ex, cls:EXC_CLS[ex]||'ex-nasdaq',
+        tv:ex?ex+':'+s.symbol:s.symbol, type:s.type||''
+      };
+    });
+  }catch(e){if(e.name==='AbortError')throw e; return [];}
+}
+
 function onSI(c){
   const inp=el('search-'+c), q=inp.value.trim();
   if(!q){closeDrop(c);return;}
   clearTimeout(debT[c]);
 
-  // Always show local DB results immediately
-  const local=localSearch(q,c);
+  // AIO: search all local DB entries across all exchanges
+  const local = c==='aio'
+    ? LOCAL_DB.filter(r=>{const lq=q.toLowerCase();return r.s.toLowerCase().includes(lq)||r.n.toLowerCase().includes(lq);})
+        .slice(0,10).map(r=>({sym:r.s,name:r.n,ex:r.ex,cls:EXC_CLS[r.ex]||'ex-nasdaq',tv:r.tv,type:''}))
+    : localSearch(q,c);
   renderDrop(c,local,q,false);
 
   // Cancel any prior live search
@@ -2118,12 +2196,14 @@ function onSI(c){
   // After debounce, run the 5-API cascade and merge with local
   debT[c]=setTimeout(async()=>{
     try{
-      const live=await liveSearch(q,c,searchAbort[c].signal);
+      // AIO: use unconstrained global TV search
+      const live = c==='aio'
+        ? await aioLiveSearch(q,searchAbort[c].signal)
+        : await liveSearch(q,c,searchAbort[c].signal);
       const merged=mergeResults(live,local);
       renderDrop(c,merged,q,false);
     }catch(e){
       if(e.name==='AbortError') return;
-      // Any non-abort failure: local results already visible, nothing to do
     }
   },350);
 }
@@ -2145,7 +2225,9 @@ function pickSym(e,c,tv){
     const isFirst=customSym[c].length===0;
     customSym[c].push({tv, visible:isFirst});
     if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
-    renderSymList(c); buildWidget(c); save();
+    renderSymList(c);
+    if(c==='aio') buildAioWidget(); else buildWidget(c);
+    save();
   }
   el('search-'+c).value='';
   closeDrop(c);
@@ -2161,7 +2243,7 @@ function pickSym(e,c,tv){
 
 // Per-country currency options rendered as quick-select buttons
 function initCurrencySelectors(){
-  ['ca','us','au'].forEach(c=>{
+  ['ca','us','au','aio'].forEach(c=>{
     const wrap=el('cur-'+c);
     if(!wrap) return;
     renderCurrencySelector(c);
@@ -2181,7 +2263,7 @@ function renderCurrencySelector(c){
 function setCurrency(c,cur){
   activeCurrency[c]=cur;
   renderCurrencySelector(c);
-  buildWidget(c);
+  if(c==='aio') buildAioWidget(); else buildWidget(c);
   save();
 }
 
@@ -2240,7 +2322,7 @@ function buildWidget(c){
     valuesTracking: '1',
     changeMode: 'price-and-percent',
     symbols: symbolsArr,
-    dateRanges: ['1d|1','5d|5','1w|15','1m|30','3m|60','6m|120','12m|1D','all|1M'],
+    dateRanges: ['1d|1','5d|5','1w|15','1m|30','3m|60','6m|120','12m|1D','60m|1W','120m|1M','ytd|1D','all|1M'],
     fontSize: '10',
     headerFontSize: 'medium',
     autosize: true,
@@ -2276,6 +2358,90 @@ function buildWidget(c){
   script.async=true;
   script.text=JSON.stringify(cfg);
   script.addEventListener('load',()=>{ const s=el('loading-'+c); if(s) s.classList.add('hidden'); setLive(); });
+  container.appendChild(script);
+  frame.appendChild(container);
+}
+
+// ═══════════════════════════════════════════════════
+//  AIO ADVANCED CHART WIDGET
+//  TradingView Advanced Chart — full-featured charting.
+//  Main symbol = selected (radio) item in customSym.aio.
+//  Watchlist = all other symbols in customSym.aio.
+//  Currency conversion applied via compareSymbols.
+//  Timezone auto-detected from user's browser locale.
+// ═══════════════════════════════════════════════════
+function buildAioWidget(){
+  const frame=el('tv-aio');
+  if(!frame) return;
+  frame.innerHTML='';
+
+  const isDark=!document.body.classList.contains('light-mode');
+  const userTz=Intl.DateTimeFormat().resolvedOptions().timeZone||'Etc/UTC';
+  const cur=activeCurrency['aio']||'USD';
+  const syms=customSym['aio'];
+
+  // Determine main symbol and watchlist
+  const selected=syms.find(r=>r.visible);
+  const mainSym=selected ? selected.tv : DEFAULT_SYM['aio'];
+  const watchlist=syms.filter(r=>r.tv!==mainSym).map(r=>r.tv);
+
+  // Currency conversion: add a compareSymbol if non-USD/native conversion needed
+  // We append the currency code as a FX conversion symbol when user picks non-default
+  const compareSymbols=[];
+  if(cur && cur!=='USD'){
+    compareSymbols.push({symbol:`FX_IDC:USD${cur}`, position:'NewPane'});
+  }
+
+  const cfg={
+    allow_symbol_change: true,
+    calendar: false,
+    details: true,
+    hide_side_toolbar: true,
+    hide_top_toolbar: false,
+    hide_legend: false,
+    hide_volume: false,
+    hotlist: false,
+    interval: 'D',
+    locale: 'en',
+    save_image: true,
+    style: '1',
+    symbol: mainSym,
+    theme: isDark?'dark':'light',
+    timezone: userTz,
+    backgroundColor: isDark?'#0d1117':'#ffffff',
+    gridColor: isDark?'rgba(30,45,61,0.8)':'rgba(200,211,222,0.6)',
+    watchlist: watchlist,
+    withdateranges: true,
+    compareSymbols: compareSymbols,
+    studies: [],
+    autosize: true,
+    width: '100%',
+    height: '100%',
+  };
+
+  // Spinner
+  const spinner=document.createElement('div');
+  spinner.className='tv-loading';
+  spinner.id='loading-aio';
+  spinner.innerHTML='<div class="spinner"></div><p>LOADING ADVANCED CHART</p>';
+  frame.appendChild(spinner);
+  setTimeout(()=>{ const s=el('loading-aio'); if(s) s.classList.add('hidden'); }, 10000);
+
+  // Widget container
+  const container=document.createElement('div');
+  container.className='tradingview-widget-container';
+  container.style.cssText='width:100%;height:100%;position:absolute;inset:0';
+  const inner=document.createElement('div');
+  inner.className='tradingview-widget-container__widget';
+  inner.style.cssText='width:calc(100% - 0px);height:calc(100% - 32px)';
+  container.appendChild(inner);
+
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src='https://s3.tradingview.com/external-embedding/embed-widget-advanced-chart.js';
+  script.async=true;
+  script.text=JSON.stringify(cfg);
+  script.addEventListener('load',()=>{ const s=el('loading-aio'); if(s) s.classList.add('hidden'); setLive(); });
   container.appendChild(script);
   frame.appendChild(container);
 }
