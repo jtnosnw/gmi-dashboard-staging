@@ -212,11 +212,13 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 }
 
 /* BOTTOM SECTION: indices (2/3) + forex (1/3) */
-.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
-@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}}
+.bottom-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:16px;align-items:stretch}
+.bottom-grid>.idx-card,.bottom-grid>.fx-card{height:100%;box-sizing:border-box}
+@media(max-width:900px){.bottom-grid{grid-template-columns:1fr}
+  .bottom-grid>.idx-card,.bottom-grid>.fx-card{height:auto}}
 
 /* INDICES CARD */
-.idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:hidden}
+.idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .idx-card .tradingview-widget-container{width:100%!important}
 .idx-card .tradingview-widget-container__widget{width:100%!important}
 /* Header */
@@ -253,8 +255,13 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .idx-listtab:hover{border-color:var(--border-bright);color:var(--text-primary)}
 .idx-listtab.active{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.35);color:var(--gold)}
 /* Symbol pill bar */
+/* idx-sym-bar: max 4 pill rows visible (22px pill + 6px gap × 4 + 16px padding) before scroll */
 .idx-sym-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:var(--bg-base);
-  border-bottom:1px solid var(--border);min-height:36px}
+  border-bottom:1px solid var(--border);max-height:122px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
+.idx-sym-bar::-webkit-scrollbar{width:4px}
+.idx-sym-bar::-webkit-scrollbar-track{background:var(--bg-base)}
+.idx-sym-bar::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
 .idx-sym-bar:empty{display:none}
 .idx-pill{display:inline-flex;align-items:center;gap:5px;background:var(--bg-card2);
   border:1px solid var(--border-bright);border-radius:20px;padding:3px 10px 3px 11px;
@@ -270,7 +277,7 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .idx-copyright a:hover{text-decoration:underline}
 
 /* FOREX TABLE */
-.fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:hidden}
+.fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-height:0}
 .fx-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap}
 .fx-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Inline add-pair row */
@@ -300,10 +307,16 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
   background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.25);color:var(--accent-fx);
   border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto}
 .fx-add-btn:hover{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.45)}
-.fx-table-wrap{overflow-x:auto}
+/* fx-table-wrap: max 7 pairs visible (thead ~30px + 7 rows × 52px) before scroll */
+.fx-table-wrap{overflow-y:auto;flex:1;max-height:394px;
+  scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
+.fx-table-wrap::-webkit-scrollbar{width:4px}
+.fx-table-wrap::-webkit-scrollbar-track{background:var(--bg-base)}
+.fx-table-wrap::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
 table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',monospace;font-size:12px}
 .fx-table thead th{padding:7px 14px;text-align:right;color:var(--text-dim);font-size:9px;letter-spacing:.1em;
-  text-transform:uppercase;background:var(--bg-card2);border-bottom:1px solid var(--border);white-space:nowrap}
+  text-transform:uppercase;background:var(--bg-card2);border-bottom:1px solid var(--border);white-space:nowrap;
+  position:sticky;top:0;z-index:2}
 .fx-table thead th:first-child,.fx-table thead th:nth-child(2){text-align:left}
 .fx-table tbody tr{border-bottom:1px solid rgba(30,45,61,.5);transition:background .15s}
 .fx-table tbody tr:last-child{border-bottom:none}
@@ -325,6 +338,8 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
 
 /* FX pair option kept for possible future use */
 
+/* idx-widget-wrap grows to fill remaining card height */
+#idx-widget-wrap{flex:1;overflow:hidden}
 /* Hide TradingView Market Overview internal tab bar when we have our own */
 #idx-widget-wrap .tv-widget-tabs,
 #idx-widget-wrap [class*="tabs-"],
@@ -660,6 +675,11 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
     </div>
     <!-- Search / Add bar -->
     <div class="idx-tab-bar">
+      <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+        <span class="idx-listtab-label">Adding to:</span>
+        <button class="idx-listtab active" id="idx-listtab-indices" onclick="switchIdxTab('indices')">Indices</button>
+        <button class="idx-listtab" id="idx-listtab-crypto" onclick="switchIdxTab('crypto')">Crypto</button>
+      </div>
       <div class="idx-tab-spacer"></div>
       <div class="idx-search-wrap" style="position:relative">
         <input class="idx-search" id="idx-search" placeholder="Search symbol to add (e.g. SPX, BTC)…" autocomplete="off"
@@ -668,16 +688,10 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
         <button class="idx-add-btn" onclick="idxAddFromInput()">+ Add</button>
       </div>
     </div>
-    <!-- Tab selector for which list to add to -->
-    <div class="idx-listtab-bar">
-      <span class="idx-listtab-label">Adding to:</span>
-      <button class="idx-listtab active" id="idx-listtab-indices" onclick="switchIdxTab('indices')">Indices</button>
-      <button class="idx-listtab" id="idx-listtab-crypto" onclick="switchIdxTab('crypto')">Crypto</button>
-    </div>
     <!-- Symbol pill list -->
     <div class="idx-sym-bar" id="idx-sym-bar"></div>
     <!-- Widget container — internal TV tab bar hidden via CSS below -->
-    <div id="idx-widget-wrap" style="min-height:500px"></div>
+    <div id="idx-widget-wrap"></div>
     <!-- Copyright -->
     <div class="idx-copyright">
       <a href="https://www.tradingview.com/markets/" rel="noopener nofollow" target="_blank">World markets</a> by TradingView
@@ -858,13 +872,6 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
 
 <script>
 // ═══════════════════════════════════════════════════
-//  ENVIRONMENT — staging bypass (hostname-keyed, safe to merge)
-// ═══════════════════════════════════════════════════
-const IS_STAGING = window.location.hostname === 'jtnosnw.github.io'
-                && window.location.search.includes('staging=true');
-console.log('[GMI Staging]', IS_STAGING, '| host:', window.location.hostname, '| search:', window.location.search);
-
-// ═══════════════════════════════════════════════════
 //  FIREBASE CONFIGURATION
 // ═══════════════════════════════════════════════════
 const firebaseConfig = {
@@ -926,6 +933,37 @@ let _saveTimer    = null;   // debounce handle
 let _stateReady   = false;  // true once Firestore load complete
 
 const STORE_KEY = 'gmi_v8';
+
+// ═══════════════════════════════════════════════════
+//  STAGING BYPASS
+//  When served from the staging GitHub Pages repo,
+//  skip Firebase auth entirely and boot the dashboard
+//  directly with default local state (no Firestore).
+// ═══════════════════════════════════════════════════
+const STAGING_HOST = 'jtnosnw.github.io';
+const STAGING_PATH = '/gmi-dashboard-staging/';
+const IS_STAGING   = location.hostname === STAGING_HOST
+                  && location.pathname.startsWith(STAGING_PATH);
+
+function onStagingBypass(){
+  console.log('[GMI] Staging bypass active — skipping auth');
+  hideOverlay();
+
+  // Use defaults — no Firestore load, no user badge
+  activeFxPairs = [...FX_DEFAULTS];
+  _stateReady   = true;
+
+  // Boot everything with dark theme default
+  initTheme('dark');
+  ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
+  if(activeTab) switchTab(activeTab);
+  initFX();
+  initIdxWidget();
+  initMarketStatus();
+  buildStockHeatmap('SPX500');
+  buildEtfHeatmap('AllCAEtf');
+  setLastRefreshed();
+}
 
 // ═══════════════════════════════════════════════════
 //  AUTH — sign in / sign out / approval gate
@@ -996,25 +1034,7 @@ async function signOut(){
 
 // Called every time auth state changes (page load, sign-in, sign-out)
 auth.onAuthStateChanged(async user => {
-  
-  // ── Staging bypass — skips auth gate on staging repo URL ──
-  if (IS_STAGING) {
-    hideOverlay();
-    const fakeUser = { displayName: 'Dev User', photoURL: null, email: 'dev@staging.local', uid: 'staging-dev' };
-    await loadStateFromFirestore('staging-dev').catch(()=>{});
-    _stateReady = true;
-    initTheme('dark');
-    ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
-    if (activeTab) switchTab(activeTab);
-    initFX();
-    initIdxWidget();
-    initMarketStatus();
-    buildStockHeatmap('SPX500');
-    buildEtfHeatmap('AllCAEtf');
-    setLastRefreshed();
-    return; // ← exits before any real auth logic runs
-  }
-  
+  if(IS_STAGING) return; // staging bypass — auth not used
   console.log('[GMI Auth] onAuthStateChanged fired. User:', user ? user.email : 'null');
   if(!user){
     showOverlay();
@@ -1307,6 +1327,8 @@ function initTheme(savedTheme){
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded', ()=>{
   applyTheme(true); // dark by default to avoid flash before state loads
+
+  // Register global dropdown-close listener
   document.addEventListener('mousedown',e=>{
     ['ca','us','au'].forEach(c=>{
       const sb=el('sidebar-'+c);
@@ -1320,6 +1342,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
       }
     });
   });
+
+  // Staging environment — bypass Firebase auth and boot directly
+  if(IS_STAGING) onStagingBypass();
 });
 
 // ═══════════════════════════════════════════════════
