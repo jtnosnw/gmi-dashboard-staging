@@ -201,13 +201,13 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 /* radio-style single-select */
 .sym-cb{position:relative;flex-shrink:0;width:15px;height:15px;cursor:pointer}
 .sym-cb input{position:absolute;opacity:0;width:0;height:0}
-.sym-cb-box{display:block;width:15px;height:15px;border:1px solid var(--border-bright);border-radius:3px;
+.sym-cb-box{display:block;width:15px;height:15px;border:1px solid var(--border-bright);border-radius:50%;
   background:transparent;transition:all .15s;position:relative}
 .sym-cb input:checked~.sym-cb-box{background:var(--accent-us);border-color:var(--accent-us)}
 .ca .sym-cb input:checked~.sym-cb-box{background:var(--accent-ca);border-color:var(--accent-ca)}
 .au .sym-cb input:checked~.sym-cb-box{background:var(--accent-au);border-color:var(--accent-au)}
-.sym-cb-box::after{content:'';position:absolute;display:none;left:4px;top:1px;width:4px;height:8px;
-  border:1.5px solid #080c10;border-top:none;border-left:none;transform:rotate(45deg)}
+.sym-cb-box::after{content:'';position:absolute;display:none;left:4px;top:4px;width:7px;height:7px;
+  background:#080c10;border-radius:50%}
 .sym-cb input:checked~.sym-cb-box::after{display:block}
 
 .sym-text{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-secondary);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -590,7 +590,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any Canadian stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Canadian stock, ETF, index, or bond by ticker or company name.<br><br>Add symbols to your list, then select the radio button next to one to display it on the chart.</div>
             </div>
           </div>
         </div>
@@ -624,7 +624,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any US stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any US stock, ETF, index, or bond by ticker or company name.<br><br>Add symbols to your list, then select the radio button next to one to display it on the chart.</div>
             </div>
           </div>
         </div>
@@ -658,7 +658,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any Australian stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Australian stock, ETF, index, or bond by ticker or company name.<br><br>Add symbols to your list, then select the radio button next to one to display it on the chart.</div>
             </div>
           </div>
         </div>
@@ -1582,12 +1582,11 @@ const CURRENCY_OPTIONS={
   au:['AUD','USD','CAD','EUR','GBP','JPY'],
 };
 
-// Returns all visible (checked) symbols for the Symbol Overview widget
-// Falls back to default if none added yet
+// Returns the single selected (radio) symbol for the Symbol Overview widget
 function getVisibleSyms(c){
   if(!customSym[c].length) return [DEFAULT_SYM[c]];
-  const checked=customSym[c].filter(r=>r.visible).map(r=>r.tv);
-  return checked.length ? checked : [customSym[c][0].tv];
+  const selected=customSym[c].find(r=>r.visible);
+  return selected ? [selected.tv] : [customSym[c][0].tv];
 }
 
 function renderSymList(c){
@@ -1596,13 +1595,13 @@ function renderSymList(c){
     wrap.innerHTML=`<div class="sym-empty">No symbols yet.<br>Type above to search &amp; add.</div>`;
     return;
   }
-  // Ensure at least one is checked
+  // Ensure exactly one is selected
   if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
 
   wrap.innerHTML=customSym[c].map((r,i)=>`
     <div class="sym-row">
       <label class="sym-cb">
-        <input type="checkbox" ${r.visible?'checked':''} onchange="toggleSym('${c}',${i},this.checked)"/>
+        <input type="radio" name="sym-radio-${c}" ${r.visible?'checked':''} onchange="selectSym('${c}',${i})"/>
         <span class="sym-cb-box"></span>
       </label>
       <span class="sym-text${r.visible?'':' dimmed'}" title="${r.tv}">${r.tv}</span>
@@ -1610,17 +1609,12 @@ function renderSymList(c){
     </div>`).join('');
 }
 
-// Checkbox toggle — can have multiple visible at once
-function toggleSym(c,i,checked){
-  // Prevent unchecking the last visible symbol
-  if(!checked && customSym[c].filter(r=>r.visible).length<=1){
-    renderSymList(c); // re-render to restore the check
-    return;
-  }
-  customSym[c][i].visible=checked;
+// Radio-style: selecting one deselects all others
+function selectSym(c,i){
+  customSym[c].forEach((r,idx)=>{ r.visible=(idx===i); });
   const rows=el('symlist-'+c).querySelectorAll('.sym-row');
   rows.forEach((row,idx)=>{
-    row.querySelector('.sym-text').classList.toggle('dimmed', !customSym[c][idx].visible);
+    row.querySelector('.sym-text').classList.toggle('dimmed', idx!==i);
   });
   buildWidget(c);
   save();
@@ -2148,8 +2142,9 @@ function updFocus(c,items){
 function pickSym(e,c,tv){
   e.preventDefault();
   if(!customSym[c].find(r=>r.tv===tv)){
-    // All new symbols start checked (visible) — multi-symbol chart
-    customSym[c].push({tv,visible:true});
+    const isFirst=customSym[c].length===0;
+    customSym[c].push({tv, visible:isFirst});
+    if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
     renderSymList(c); buildWidget(c); save();
   }
   el('search-'+c).value='';
@@ -2207,7 +2202,7 @@ function buildWidget(c){
       <div class="tv-instructions">
         <div class="tv-inst-icon">📈</div>
         <div class="tv-inst-title">Search for a Symbol</div>
-        <div class="tv-inst-body">Use the search panel on the right to find any stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
+        <div class="tv-inst-body">Use the search panel on the right to find any stock, ETF, index, or bond by ticker or company name.<br><br>Add symbols to your list, then select the radio button next to one to display it on the chart.</div>
       </div>
     </div>`;
     return;
