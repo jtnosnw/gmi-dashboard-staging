@@ -138,6 +138,18 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .card-sidebar{width:220px;flex-shrink:0;display:flex;flex-direction:column;background:var(--bg-card)}
 .sidebar-section{padding:10px 10px 8px;border-bottom:1px solid var(--border)}
 .sidebar-label{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px}
+/* Currency selector */
+.cur-selector-wrap{padding:8px 10px;border-bottom:1px solid var(--border)}
+.cur-selector-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:.08em;text-transform:uppercase;margin-bottom:5px}
+.cur-selector{display:flex;flex-wrap:wrap;gap:4px}
+.cur-btn{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:4px;
+  border:1px solid var(--border-bright);background:transparent;color:var(--text-secondary);
+  cursor:pointer;transition:all .15s;letter-spacing:.04em}
+.cur-btn:hover{border-color:var(--border-bright);color:var(--text-primary);background:rgba(255,255,255,.04)}
+.cur-btn.active{color:#080c10;border-color:transparent}
+.ca .cur-btn.active{background:var(--accent-ca)}
+.us .cur-btn.active{background:var(--accent-us)}
+.au .cur-btn.active{background:var(--accent-au)}
 /* search bar */
 .search-wrap{position:relative}
 .sym-search{font-family:'JetBrains Mono',monospace;font-size:12px;background:var(--bg-base);
@@ -578,7 +590,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any Canadian stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Canadian stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
             </div>
           </div>
         </div>
@@ -591,6 +603,10 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
               oninput="onSI('ca')" onkeydown="onSK(event,'ca')" onfocus="onSF('ca')"/>
             <div class="sym-dropdown" id="dropdown-ca"></div>
           </div>
+        </div>
+        <div class="cur-selector-wrap">
+          <div class="cur-selector-label">Currency</div>
+          <div class="cur-selector" id="cur-ca"></div>
         </div>
         <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
         <div class="sym-list-wrap" id="symlist-ca"></div>
@@ -608,7 +624,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any US stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+              <div class="tv-inst-body">Use the search panel on the right to find any US stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
             </div>
           </div>
         </div>
@@ -621,6 +637,10 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
               oninput="onSI('us')" onkeydown="onSK(event,'us')" onfocus="onSF('us')"/>
             <div class="sym-dropdown" id="dropdown-us"></div>
           </div>
+        </div>
+        <div class="cur-selector-wrap">
+          <div class="cur-selector-label">Currency</div>
+          <div class="cur-selector" id="cur-us"></div>
         </div>
         <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
         <div class="sym-list-wrap" id="symlist-us"></div>
@@ -638,7 +658,7 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
             <div class="tv-instructions">
               <div class="tv-inst-icon">📈</div>
               <div class="tv-inst-title">Search for a Symbol</div>
-              <div class="tv-inst-body">Use the search panel on the right to find any Australian stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
+              <div class="tv-inst-body">Use the search panel on the right to find any Australian stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
             </div>
           </div>
         </div>
@@ -651,6 +671,10 @@ table.fx-table{width:100%;border-collapse:collapse;font-family:'JetBrains Mono',
               oninput="onSI('au')" onkeydown="onSK(event,'au')" onfocus="onSF('au')"/>
             <div class="sym-dropdown" id="dropdown-au"></div>
           </div>
+        </div>
+        <div class="cur-selector-wrap">
+          <div class="cur-selector-label">Currency</div>
+          <div class="cur-selector" id="cur-au"></div>
         </div>
         <div class="sidebar-label" style="padding:8px 10px 4px;border-bottom:1px solid var(--border)">Symbols</div>
         <div class="sym-list-wrap" id="symlist-au"></div>
@@ -954,6 +978,7 @@ function onStagingBypass(){
 
   // Boot everything with dark theme default
   initTheme('dark');
+  initCurrencySelectors();
   ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
   if(activeTab) switchTab(activeTab);
   initFX();
@@ -1134,6 +1159,7 @@ async function onUserApproved(user, data){
 
   // Re-render everything with restored state
   initTheme(data.theme || 'dark');
+  initCurrencySelectors();
   ['ca','us','au'].forEach(c=>{ renderSymList(c); buildWidget(c); });
   if(activeTab) switchTab(activeTab);
   initFX();
@@ -1205,6 +1231,7 @@ function collectState(){
   return{
     customSym,
     activeFxPairs,
+    activeCurrency,
     activeTab,
     idxSymbols,
     idxActiveTab,
@@ -1261,6 +1288,13 @@ async function loadStateFromFirestore(uid){
     }
     if(s.idxActiveTab && ['indices','crypto'].includes(s.idxActiveTab)){
       idxActiveTab = s.idxActiveTab;
+    }
+
+    // Restore currency selections
+    if(s.activeCurrency){
+      ['ca','us','au'].forEach(c=>{
+        if(s.activeCurrency[c]) activeCurrency[c]=s.activeCurrency[c];
+      });
     }
 
     // Restore theme immediately
@@ -1335,6 +1369,7 @@ function applyTheme(isDark){
 function toggleTheme(){
   const isDark=document.body.classList.contains('light-mode');
   applyTheme(isDark);
+  ['ca','us','au'].forEach(c=>buildWidget(c));
   rebuildStockHeatmap();
   rebuildEtfHeatmap();
   buildIdxWidget();
@@ -1533,13 +1568,26 @@ function initMarketStatus(){
 // ═══════════════════════════════════════════════════
 
 // Default symbol shown when user has added nothing yet
-const DEFAULT_SYM={ca:'TSX:XIU', us:'NASDAQ:QQQ', au:'ASX:XJO'};
+const DEFAULT_SYM={ca:'TSX:VFV', us:'NASDAQ:NVDA', au:'ASX:GDX'};
+const DEFAULT_RANGE='5D';
 
-// Returns the single selected symbol (radio-style: only one at a time)
+// Per-country active currency for Symbol Overview widget
+const DEFAULT_CURRENCY={ca:'CAD', us:'USD', au:'AUD'};
+let activeCurrency={ca:'CAD', us:'USD', au:'AUD'};
+
+// Currency options available per country tab
+const CURRENCY_OPTIONS={
+  ca:['CAD','USD','AUD','EUR','GBP','JPY'],
+  us:['USD','CAD','AUD','EUR','GBP','JPY'],
+  au:['AUD','USD','CAD','EUR','GBP','JPY'],
+};
+
+// Returns all visible (checked) symbols for the Symbol Overview widget
+// Falls back to default if none added yet
 function getVisibleSyms(c){
   if(!customSym[c].length) return [DEFAULT_SYM[c]];
-  const selected=customSym[c].find(r=>r.visible);
-  return selected ? [selected.tv] : [customSym[c][0].tv];
+  const checked=customSym[c].filter(r=>r.visible).map(r=>r.tv);
+  return checked.length ? checked : [customSym[c][0].tv];
 }
 
 function renderSymList(c){
@@ -1548,14 +1596,13 @@ function renderSymList(c){
     wrap.innerHTML=`<div class="sym-empty">No symbols yet.<br>Type above to search &amp; add.</div>`;
     return;
   }
-  // Ensure exactly one is checked; if none, check first
-  const anyChecked=customSym[c].some(r=>r.visible);
-  if(!anyChecked && customSym[c].length) customSym[c][0].visible=true;
+  // Ensure at least one is checked
+  if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
 
   wrap.innerHTML=customSym[c].map((r,i)=>`
     <div class="sym-row">
       <label class="sym-cb">
-        <input type="radio" name="sym-radio-${c}" ${r.visible?'checked':''} onchange="selectSym('${c}',${i})"/>
+        <input type="checkbox" ${r.visible?'checked':''} onchange="toggleSym('${c}',${i},this.checked)"/>
         <span class="sym-cb-box"></span>
       </label>
       <span class="sym-text${r.visible?'':' dimmed'}" title="${r.tv}">${r.tv}</span>
@@ -1563,13 +1610,17 @@ function renderSymList(c){
     </div>`).join('');
 }
 
-// Radio-style: selecting one deselects all others
-function selectSym(c,i){
-  customSym[c].forEach((r,idx)=>{ r.visible=(idx===i); });
-  // Update dimming live without full re-render
+// Checkbox toggle — can have multiple visible at once
+function toggleSym(c,i,checked){
+  // Prevent unchecking the last visible symbol
+  if(!checked && customSym[c].filter(r=>r.visible).length<=1){
+    renderSymList(c); // re-render to restore the check
+    return;
+  }
+  customSym[c][i].visible=checked;
   const rows=el('symlist-'+c).querySelectorAll('.sym-row');
   rows.forEach((row,idx)=>{
-    row.querySelector('.sym-text').classList.toggle('dimmed', idx!==i);
+    row.querySelector('.sym-text').classList.toggle('dimmed', !customSym[c][idx].visible);
   });
   buildWidget(c);
   save();
@@ -2097,9 +2148,8 @@ function updFocus(c,items){
 function pickSym(e,c,tv){
   e.preventDefault();
   if(!customSym[c].find(r=>r.tv===tv)){
-    const isFirst=customSym[c].length===0;
-    customSym[c].push({tv,visible:isFirst});
-    if(!customSym[c].some(r=>r.visible)) customSym[c][0].visible=true;
+    // All new symbols start checked (visible) — multi-symbol chart
+    customSym[c].push({tv,visible:true});
     renderSymList(c); buildWidget(c); save();
   }
   el('search-'+c).value='';
@@ -2108,58 +2158,131 @@ function pickSym(e,c,tv){
 }
 
 // ═══════════════════════════════════════════════════
-//  TRADINGVIEW WIDGET — single symbol, iframe embed
+//  SYMBOL OVERVIEW WIDGET
+//  TradingView Symbol Overview — supports multi-symbol,
+//  currency conversion, and date range selection.
+//  Rebuilt via script injection on any state change.
 // ═══════════════════════════════════════════════════
-function buildWidget(c){
-  const frame=el('tv-'+c), loader=el('loading-'+c);
 
-  // Remove any existing iframes
-  Array.from(frame.querySelectorAll('iframe')).forEach(e=>e.remove());
+// Per-country currency options rendered as quick-select buttons
+function initCurrencySelectors(){
+  ['ca','us','au'].forEach(c=>{
+    const wrap=el('cur-'+c);
+    if(!wrap) return;
+    renderCurrencySelector(c);
+  });
+}
+
+function renderCurrencySelector(c){
+  const wrap=el('cur-'+c);
+  if(!wrap) return;
+  const options=CURRENCY_OPTIONS[c]||['USD','CAD','AUD'];
+  const active=activeCurrency[c]||DEFAULT_CURRENCY[c];
+  wrap.innerHTML=options.map(cur=>`
+    <button class="cur-btn${cur===active?' active':''}" onclick="setCurrency('${c}','${cur}')">${cur}</button>
+  `).join('');
+}
+
+function setCurrency(c,cur){
+  activeCurrency[c]=cur;
+  renderCurrencySelector(c);
+  buildWidget(c);
+  save();
+}
+
+function buildWidget(c){
+  const frame=el('tv-'+c);
+  const loader=el('loading-'+c);
+  if(!frame) return;
+
+  // Clear everything inside the frame
+  frame.innerHTML='';
 
   const syms=getVisibleSyms(c);
+  const cur=activeCurrency[c]||DEFAULT_CURRENCY[c];
 
-  // If no custom symbols added yet, show the instructions panel
+  // No custom symbols — show instructions
   if(!customSym[c].length){
-    loader.classList.remove('hidden');
-    // Restore instructions if they were replaced with a spinner
-    if(!loader.querySelector('.tv-instructions')){
-      loader.innerHTML=`<div class="tv-instructions">
+    frame.innerHTML=`<div class="tv-loading" id="loading-${c}">
+      <div class="tv-instructions">
         <div class="tv-inst-icon">📈</div>
         <div class="tv-inst-title">Search for a Symbol</div>
-        <div class="tv-inst-body">Use the search panel on the right to find any stock, ETF, index, or bond by ticker or company name.<br><br>Select a result to add it to your list, then tick its radio button to display it on the chart.<br><br><span class="tv-inst-note">⚠ Only 1 symbol can be viewed at a time.</span></div>
-      </div>`;
-    }
+        <div class="tv-inst-body">Use the search panel on the right to find any stock, ETF, index, or bond by ticker or company name.<br><br>Select results to add them to your list — all checked symbols display together in the chart.</div>
+      </div>
+    </div>`;
     return;
   }
 
-  // Show spinner while chart loads
-  loader.innerHTML='<div class="spinner"></div><p>LOADING MARKET DATA</p>';
-  loader.classList.remove('hidden');
+  // Build symbols array for Symbol Overview: each entry ["EXCHANGE:TICKER|5D|CUR"]
+  const symbolsArr=syms.map(tv=>[`${tv}|${DEFAULT_RANGE}|${cur}`]);
 
-  const symbol=syms[0];
+  const isDark=!document.body.classList.contains('light-mode');
 
-  const src='https://s.tradingview.com/widgetembed/'
-    +'?symbol='+encodeURIComponent(symbol)
-    +'&interval=D'
-    +'&hidesidetoolbar=1'
-    +'&hide_top_toolbar=0'
-    +'&symboledit=1'
-    +'&saveimage=0'
-    +'&toolbarbg=0d1117'
-    +'&theme=dark'
-    +'&style=1'
-    +'&timezone=exchange'
-    +'&locale=en';
+  const cfg={
+    lineWidth: 2,
+    lineType: 0,
+    chartType: 'area',
+    showVolume: true,
+    fontColor: isDark?'rgba(136,153,170,1)':'rgba(74,96,112,1)',
+    gridLineColor: isDark?'rgba(30,45,61,0.8)':'rgba(200,211,222,0.8)',
+    volumeUpColor: 'rgba(34,171,148,0.5)',
+    volumeDownColor: 'rgba(247,82,95,0.5)',
+    backgroundColor: isDark?'rgba(13,17,23,0)':'rgba(255,255,255,0)',
+    widgetFontColor: isDark?'#e8f0fe':'#0d1f2e',
+    upColor: '#22ab94',
+    downColor: '#f7525f',
+    borderUpColor: '#22ab94',
+    borderDownColor: '#f7525f',
+    wickUpColor: '#22ab94',
+    wickDownColor: '#f7525f',
+    colorTheme: isDark?'dark':'light',
+    isTransparent: true,
+    locale: 'en',
+    chartOnly: false,
+    scalePosition: 'right',
+    scaleMode: 'Normal',
+    fontFamily: "-apple-system, BlinkMacSystemFont, 'Syne', sans-serif",
+    valuesTracking: '1',
+    changeMode: 'price-and-percent',
+    symbols: symbolsArr,
+    dateRanges: ['1d|1','5d|5','1w|15','1m|30','3m|60','6m|120','12m|1D','all|1M'],
+    fontSize: '10',
+    headerFontSize: 'medium',
+    autosize: true,
+    dateFormat: "dd MMM 'yy",
+    width: '100%',
+    height: '100%',
+    noTimeScale: false,
+    hideDateRanges: false,
+    hideMarketStatus: false,
+    hideSymbolLogo: false,
+  };
 
-  const iframe=document.createElement('iframe');
-  iframe.src=src;
-  iframe.style.cssText='width:100%;height:100%;border:none;position:absolute;inset:0;display:block';
-  iframe.setAttribute('allowtransparency','true');
-  iframe.setAttribute('frameborder','0');
-  iframe.setAttribute('scrolling','no');
-  iframe.addEventListener('load',()=>{loader.classList.add('hidden');setLive(true);});
-  setTimeout(()=>loader.classList.add('hidden'),8000);
-  frame.appendChild(iframe);
+  // Spinner overlay while widget loads
+  const spinnerDiv=document.createElement('div');
+  spinnerDiv.className='tv-loading';
+  spinnerDiv.id='loading-'+c;
+  spinnerDiv.innerHTML='<div class="spinner"></div><p>LOADING MARKET DATA</p>';
+  frame.appendChild(spinnerDiv);
+  setTimeout(()=>{ const s=el('loading-'+c); if(s) s.classList.add('hidden'); }, 8000);
+
+  // Build the widget container
+  const container=document.createElement('div');
+  container.className='tradingview-widget-container';
+  container.style.cssText='width:100%;height:100%;position:absolute;inset:0';
+  const inner=document.createElement('div');
+  inner.className='tradingview-widget-container__widget';
+  inner.style.cssText='width:100%;height:100%';
+  container.appendChild(inner);
+
+  const script=document.createElement('script');
+  script.type='text/javascript';
+  script.src='https://s3.tradingview.com/external-embedding/embed-widget-symbol-overview.js';
+  script.async=true;
+  script.text=JSON.stringify(cfg);
+  script.addEventListener('load',()=>{ const s=el('loading-'+c); if(s) s.classList.add('hidden'); setLive(); });
+  container.appendChild(script);
+  frame.appendChild(container);
 }
 
 // ═══════════════════════════════════════════════════
