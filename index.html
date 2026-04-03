@@ -218,7 +218,7 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
   .bottom-grid>.idx-card,.bottom-grid>.fx-card{height:auto}}
 
 /* INDICES CARD */
-.idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.idx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--gold);border-radius:var(--radius);overflow:clip;display:flex;flex-direction:column;min-height:0}
 .idx-card .tradingview-widget-container{width:100%!important}
 .idx-card .tradingview-widget-container__widget{width:100%!important}
 /* Header */
@@ -255,8 +255,10 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .idx-listtab:hover{border-color:var(--border-bright);color:var(--text-primary)}
 .idx-listtab.active{background:rgba(251,191,36,.12);border-color:rgba(251,191,36,.35);color:var(--gold)}
 /* Symbol pill bar */
+/* idx-sym-bar: max 4 pill rows visible (22px pill + 6px gap × 4 + 16px padding) before scroll */
 .idx-sym-bar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 14px;background:var(--bg-base);
-  border-bottom:1px solid var(--border);max-height:80px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
+  border-bottom:1px solid var(--border);max-height:122px;overflow-y:auto;
+  scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
 .idx-sym-bar::-webkit-scrollbar{width:4px}
 .idx-sym-bar::-webkit-scrollbar-track{background:var(--bg-base)}
 .idx-sym-bar::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
@@ -275,7 +277,7 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
 .idx-copyright a:hover{text-decoration:underline}
 
 /* FOREX TABLE */
-.fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:hidden;display:flex;flex-direction:column;min-height:0}
+.fx-card{background:var(--bg-card);border:1px solid var(--border);border-top:2px solid var(--accent-fx);border-radius:var(--radius);overflow:clip;display:flex;flex-direction:column;min-height:0}
 .fx-header{display:flex;align-items:center;gap:10px;padding:11px 16px;background:var(--bg-card2);border-bottom:1px solid var(--border);flex-wrap:wrap}
 .fx-header-left{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Inline add-pair row */
@@ -305,7 +307,9 @@ body.light-mode .theme-track::after{transform:translateX(16px);background:var(--
   background:rgba(192,132,252,.1);border:1px solid rgba(192,132,252,.25);color:var(--accent-fx);
   border-radius:6px;cursor:pointer;transition:all .2s;white-space:nowrap;margin-left:auto}
 .fx-add-btn:hover{background:rgba(192,132,252,.22);border-color:rgba(192,132,252,.45)}
-.fx-table-wrap{overflow-y:auto;flex:1;scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
+/* fx-table-wrap: max 7 pairs visible (thead ~30px + 7 rows × 52px) before scroll */
+.fx-table-wrap{overflow-y:auto;max-height:394px;
+  scrollbar-width:thin;scrollbar-color:var(--border-bright) var(--bg-base)}
 .fx-table-wrap::-webkit-scrollbar{width:4px}
 .fx-table-wrap::-webkit-scrollbar-track{background:var(--bg-base)}
 .fx-table-wrap::-webkit-scrollbar-thumb{background:var(--border-bright);border-radius:2px}
